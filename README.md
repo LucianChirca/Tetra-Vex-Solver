@@ -104,6 +104,16 @@ Dependencies point one way, into `core`. The view never mutates state except
 through the model's methods; the solver emits `SolverEvent`s and never touches
 the GUI.
 
+### Patterns
+
+- **MVC** : keep model, GUI, and rules separate.
+- **Generator (`yield`)** : pause the solver mid-search — so you can watch, pause, and tune its speed.
+- **Two views, one model** : the same game, played by a human (`PlayView`) or a robot (`SolverView`) — both drive the model the same way.
+- **Strategy** : swap pruning tricks without rewriting the search.
+- **Dependency Inversion** : swap solver or view without touching the other.
+- **Composition Root** : one file (`main.ts`) wires it all.
+- **Pull events** : the solver doesn't know the UI — the UI asks for steps when it wants them.
+
 ---
 
 ## Project layout
