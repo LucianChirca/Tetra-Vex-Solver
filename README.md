@@ -76,36 +76,47 @@ rejected branches vanish in the solver view.
 
 ## Architecture
 
-Three layers, one-way dependencies. The domain is the shared language; nothing
-flows back into it.
+An MVC split with strict, one-way dependencies. The **model** owns all state +
+rules; the **view** is dumb (render + input only); the **solver** is a service;
+`core` is the shared vocabulary everything speaks.
 
 ```mermaid
 flowchart TD
-    subgraph UI["gui/ — render + input"]
-        app[App / Views]
-        draw[drawTile]
+    main([main.ts — composition root])
+
+    subgraph GUI["gui/ — View (dumb)"]
+        views[Play / Solver views + drawTile]
     end
-    subgraph SOLVERS["solvers/ — search"]
-        base[BacktrackingSolver]
-        strat[brute-force / edge-match / indexed]
+    subgraph GAME["game/ — Model"]
+        model[Game: state + rules + generate]
     end
-    subgraph CORE["core/ — domain (depends on nothing)"]
-        types[Tile / Board / Puzzle]
-        gen[generate]
+    subgraph SOLVERS["solvers/ — service"]
+        solver[BacktrackingSolver + strategies]
+    end
+    subgraph CORE["core/ — shared types (depends on nothing)"]
+        types[Tile / Digit / Side / Puzzle]
     end
 
-    UI --> CORE
-    SOLVERS --> CORE
-    UI -. SolverEvent stream .-> SOLVERS
-    main([main.ts<br/>composition root]) --> UI
+    main --> GUI
+    main --> GAME
     main --> SOLVERS
-    main --> CORE
+
+    views -->|"place / isLegalMove / isSolved"| model
+    views -.->|"replays SolverEvents"| solver
+    solver -->|uses rules| model
+    GUI --> CORE
+    GAME --> CORE
+    SOLVERS --> CORE
 ```
 
-- **core** depends on nothing. **solvers** depend on core only — never on the GUI.
-- **gui** renders core state and pulls a solver's `SolverEvent` stream; it holds no solving logic.
-- A solver's output speaks the domain (place tile at row/col), so the UI just replays it.
-- `main.ts` is the only place that wires the three together.
+- **`game/` (Model)** — the only thing that mutates state. Exposes `place`,
+  `isLegalMove`, `isSolved`, the tile pool, and puzzle `generate`.
+- **`gui/` (View)** — renders the model and forwards user input; asks the model
+  what's legal. Knows no rules, holds no search.
+- **`solvers/` (service)** — input a `Puzzle`, output domain `SolverEvent`s the
+  view replays. Uses the model's rules; never touches the GUI.
+- **`core/`** — pure shared types. Depends on nothing; everyone depends on it.
+- **`main.ts`** — the only place that constructs and wires the three together.
 
 ---
 
@@ -117,25 +128,16 @@ tetra_vex_solver/
 ├── package.json         scripts + deps (Vite, TypeScript)
 ├── tsconfig.json        strict TypeScript config
 ├── src/
-│   ├── main.ts          entry — reads ?mode= / ?solver=, wires it together
-│   ├── game.ts          puzzle rules: Tile, Board, COLORS, edge match, generate()
-│   ├── gui/
-│   │   ├── app.ts       canvas + requestAnimationFrame loop, runs a View
-│   │   ├── theme.ts     colors / constants
-│   │   ├── drawTile.ts  draws one tile (4 triangles + digits)
-│   │   ├── playView.ts  interactive drag-and-drop game
-│   │   └── solverView.ts animates a solver's search events
-│   └── solvers/
-│       ├── index.ts     SOLVERS registry
-│       ├── base.ts      shared backtracking core (traversal + backtrack + events)
-│       ├── bruteForce.ts  no pruning
-│       ├── edgeMatch.ts   edge-match pruning
-│       └── indexed.ts     indexed candidate lookup
+│   ├── main.ts          composition root — constructs + wires model/view/solver
+│   ├── core/            shared types — Tile, Digit, Side, Puzzle (no behavior)
+│   ├── game/            Model — Game (state + rules) + generate()
+│   ├── gui/             View — App loop, drawTile, playView, solverView
+│   └── solvers/         service — shared backtracking core + pruning strategies
 └── assets/              screenshots
 ```
 
-The solver and GUI are decoupled: a solver emits `SolverEvent`s through a
-callback, and `SolverView` just renders whatever it's handed.
+The view and solver are decoupled through the domain: a solver emits
+`SolverEvent`s, and the view replays them onto the model.
 
 ---
 

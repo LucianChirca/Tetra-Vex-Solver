@@ -1,14 +1,10 @@
 import type { View } from "./app";
-import { Board } from "../core";
-import type { Puzzle } from "../core";
+import type { Game } from "../game";
 
-// Interactive game: drag pool tiles into the grid. Wins when board.isSolved().
+// Dumb view: renders the model, forwards input, asks the model what's legal.
+// Holds no rules and never mutates state except through the model's methods.
 export class PlayView implements View {
-  readonly board: Board;
-
-  constructor(puzzle: Puzzle) {
-    this.board = new Board(puzzle.n);
-  }
+  constructor(protected readonly model: Game) {}
 
   handlePointer(_e: PointerEvent): void {}
   update(_dt: number): void {}

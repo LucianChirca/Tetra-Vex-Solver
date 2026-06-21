@@ -1,18 +1,15 @@
 import type { View } from "./app";
-import { Board } from "../core";
+import type { Game } from "../game";
 import type { BacktrackingSolver, SolverEvent } from "../solvers";
 
-// Triggers a solver and renders its game state; pulls one event per frame.
+// Triggers a solver and renders the model as it replays the solver's events.
 export class SolverView implements View {
-  readonly board: Board;
-  protected steps: Generator<SolverEvent, Board | null> | null = null;
+  protected steps: Generator<SolverEvent, Game | null> | null = null;
 
   constructor(
-    private readonly solver: BacktrackingSolver,
-    n: number,
-  ) {
-    this.board = new Board(n);
-  }
+    protected readonly model: Game,
+    protected readonly solver: BacktrackingSolver,
+  ) {}
 
   start(): void {
     this.steps = this.solver.solve();

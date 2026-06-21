@@ -1,19 +1,20 @@
-import { Board } from "../core";
-import type { Tile } from "../core";
+import { Game } from "../game";
+import type { Puzzle, Tile } from "../core";
 import type { SolverEvent } from "./events";
 
 // Shared row-major backtracking. Strategies override only candidatesFor.
+// Input = Puzzle; output = a stream of domain events the GUI can replay.
 export abstract class BacktrackingSolver {
   readonly name: string = "base";
   protected readonly tiles: readonly Tile[];
   protected readonly n: number;
-  protected readonly board: Board;
+  protected readonly model: Game; // own working model
   protected readonly placed: boolean[]; // placed[tile.id]
 
-  constructor(tiles: readonly Tile[], n: number) {
-    this.tiles = tiles;
-    this.n = n;
-    this.board = new Board(n);
+  constructor(puzzle: Puzzle) {
+    this.tiles = puzzle.tiles;
+    this.n = puzzle.n;
+    this.model = new Game(puzzle);
     this.placed = [];
   }
 
@@ -21,7 +22,7 @@ export abstract class BacktrackingSolver {
   protected abstract candidatesFor(row: number, col: number): Iterable<Tile>;
 
   // Same traversal for every strategy. Yields a step per decision; pull to step.
-  *solve(): Generator<SolverEvent, Board | null> {
+  *solve(): Generator<SolverEvent, Game | null> {
     throw new Error("not implemented");
   }
 }
