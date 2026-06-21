@@ -3,8 +3,12 @@
   "version": "0.1.0",
   "description": "Play the TetraVex edge-matching puzzle and watch a backtracking solver crack it.",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "dev": "vite",
+    "typecheck": "tsc --noEmit",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },

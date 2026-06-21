@@ -2,19 +2,22 @@ import type { View } from "./app";
 import type { Game } from "../game";
 import type { BacktrackingSolver, SolverEvent } from "../solvers";
 
-// Triggers a solver and renders the model as it replays the solver's events.
+// Triggers a solver and renders its progress. `model` is the replay target:
+// the solver emits SolverEvents (its own internal model stays private) and the
+// view applies them to `model`, which is the single source of what's drawn.
 export class SolverView implements View {
-  protected steps: Generator<SolverEvent, Game | null> | null = null;
+  private steps: Generator<SolverEvent, boolean, void> | null = null;
 
   constructor(
-    protected readonly model: Game,
-    protected readonly solver: BacktrackingSolver,
+    private readonly model: Game,
+    private readonly solver: BacktrackingSolver,
   ) {}
 
   start(): void {
-    this.steps = this.solver.solve();
+    // kick off the solver generator: this.steps = this.solver.solve();
+    throw new Error("not implemented");
   }
 
-  update(_dt: number): void {}
-  draw(_ctx: CanvasRenderingContext2D): void {}
+  update(dt: number): void {}
+  draw(ctx: CanvasRenderingContext2D): void {}
 }

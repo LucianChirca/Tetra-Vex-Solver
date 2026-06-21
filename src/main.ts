@@ -1,25 +1,27 @@
 import { Game, generate } from "./game";
-import { App } from "./gui/app";
-import { PlayView } from "./gui/playView";
-import { SolverView } from "./gui/solverView";
+import { App, PlayView, SolverView } from "./gui";
 import { SOLVERS, type SolverName } from "./solvers";
+
+type Mode = "play" | "solve";
+
+const BOARD_SIZE = 3;
+const DEFAULT_MODE: Mode = "play";
+const DEFAULT_SOLVER: SolverName = "indexed";
 
 function main(): void {
   const params = new URLSearchParams(location.search);
-  const mode = params.get("mode") ?? "play";
-  const n = 3;
+  const mode: Mode = params.get("mode") === "solve" ? "solve" : DEFAULT_MODE;
 
   const mount = document.getElementById("app")!;
-  const puzzle = generate(n);
+  const puzzle = generate(BOARD_SIZE);
   const model = new Game(puzzle);
-  const app = new App(mount, n);
+  const app = new App(mount, BOARD_SIZE);
 
   if (mode === "solve") {
-    const name = (params.get("solver") ?? "indexed") as SolverName;
+    const raw = params.get("solver");
+    const name: SolverName = raw && raw in SOLVERS ? (raw as SolverName) : DEFAULT_SOLVER;
     const solver = new SOLVERS[name](puzzle);
-    const view = new SolverView(model, solver);
-    view.start();
-    app.run(view);
+    app.run(new SolverView(model, solver));
   } else {
     app.run(new PlayView(model));
   }

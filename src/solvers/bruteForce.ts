@@ -5,7 +5,7 @@ import type { Tile } from "../core";
 export class BruteForceSolver extends BacktrackingSolver {
   override readonly name = "brute-force";
 
-  protected candidatesFor(_row: number, _col: number): Iterable<Tile> {
+  protected candidatesFor(row: number, col: number): Iterable<Tile> {
     throw new Error("not implemented");
   }
 }

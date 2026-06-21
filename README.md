@@ -41,15 +41,6 @@ the browser so it's one link to share:
 - **Compare strategies** — the same backtracking core, with progressively more
   pruning, swappable via `?solver=`.
 
-<!-- TODO: drop real captures once the views are built -->
-<p align="center">
-  <img src="assets/play-view.png" alt="Interactive play view" width="45%">
-  &nbsp;&nbsp;
-  <img src="assets/solver-view.png" alt="Solver stepping through states" width="45%">
-  <br>
-  <sub>Left: play mode. Right: solver mode. <em>(captures coming soon)</em></sub>
-</p>
-
 ---
 
 ## How it works
@@ -109,14 +100,9 @@ flowchart TD
     SOLVERS --> CORE
 ```
 
-- **`game/` (Model)** — the only thing that mutates state. Exposes `place`,
-  `isLegalMove`, `isSolved`, the tile pool, and puzzle `generate`.
-- **`gui/` (View)** — renders the model and forwards user input; asks the model
-  what's legal. Knows no rules, holds no search.
-- **`solvers/` (service)** — input a `Puzzle`, output domain `SolverEvent`s the
-  view replays. Uses the model's rules; never touches the GUI.
-- **`core/`** — pure shared types. Depends on nothing; everyone depends on it.
-- **`main.ts`** — the only place that constructs and wires the three together.
+Dependencies point one way, into `core`. The view never mutates state except
+through the model's methods; the solver emits `SolverEvent`s and never touches
+the GUI.
 
 ---
 
@@ -136,28 +122,47 @@ tetra_vex_solver/
 └── assets/              screenshots
 ```
 
-The view and solver are decoupled through the domain: a solver emits
-`SolverEvent`s, and the view replays them onto the model.
-
 ---
 
 ## Getting started
 
 ```bash
-git clone https://github.com/<you>/tetra_vex_solver.git
-cd tetra_vex_solver
+git clone https://github.com/LucianChirca/Tetra-Vex-Solver.git
+cd Tetra-Vex-Solver
 npm install
 
-npm run dev      # local dev server with hot reload
+npm run dev        # local dev server with hot reload
 ```
 
 Then open the printed URL. Add `?mode=solve` to watch the solver, or
 `?solver=edge-match` to pick a strategy.
 
 ```bash
-npm run build    # type-check + production build to dist/
-npm run preview  # serve the production build
+npm run typecheck  # fast compile check — the inner loop while implementing
+npm run build      # type-check + production build to dist/
+npm run preview    # serve the production build
 ```
+
+---
+
+## Implementing
+
+Every function body is a stub right now — the scaffold is structure only.
+Convention: value-returning stubs `throw new Error("not implemented")` (fail
+loud); per-frame view hooks (`update`/`draw`/`handlePointer`) are empty `{}`.
+
+Suggested order — each step only depends on the ones above it:
+
+1. `core/types.ts` — already done (pure types).
+2. `game/game.ts` — the rules: `isLegalMove`, `place`/`remove`, `isSolved`.
+3. `game/generator.ts` — `generate()` random solvable puzzles.
+4. `solvers/base.ts` — the shared `solve()`/`step()` traversal + events.
+5. one strategy's `candidatesFor` (start with `edgeMatch`).
+6. `gui/drawTile.ts` + `gui/app.ts` — render a tile, run the canvas loop.
+7. `PlayView`, then `SolverView`.
+
+> Tip: while implementing, you can flip `noUnusedLocals`/`noUnusedParameters`
+> back on in `tsconfig.json` once bodies read their fields/params.
 
 ---
 
@@ -173,8 +178,7 @@ npm run preview  # serve the production build
 - [ ] `SolverView` — animated place / reject / backtrack, with a speed control
 
 **Refining the backtracking solver** *(the core exploration)*
-- [ ] edge-match pruning (only place tiles that fit the neighbors)
-- [ ] indexed candidate lookup — `(side, digit) → tiles`
+- [ ] the three strategies in the table above (`brute-force` → `edge-match` → `indexed`)
 - [ ] most-constrained cell / fewest-candidates ordering
 - [ ] forward-checking — detect a cell with zero candidates early
 - [ ] side-by-side strategy comparison (steps, time, branches pruned)

@@ -4,12 +4,18 @@ import type { Puzzle, Tile } from "../core";
 // The only thing that mutates state. Views call this; they never reason about rules.
 export class Game {
   readonly n: number;
+  private readonly grid: (Tile | null)[]; // row-major, length n*n
+  private readonly remaining: Tile[]; // tiles not yet placed (the pool)
+  private readonly solution: readonly Tile[]; // for win-checking; never shown to a solver
 
   constructor(puzzle: Puzzle) {
     this.n = puzzle.n;
+    this.grid = new Array(puzzle.n * puzzle.n).fill(null);
+    this.remaining = [...puzzle.tiles];
+    this.solution = puzzle.solution;
   }
 
-  at(_row: number, _col: number): Tile | null {
+  at(row: number, col: number): Tile | null {
     throw new Error("not implemented");
   }
 
@@ -18,13 +24,17 @@ export class Game {
   }
 
   // Is placing this tile here allowed? (in bounds, empty, edges match neighbors)
-  isLegalMove(_row: number, _col: number, _tile: Tile): boolean {
+  isLegalMove(row: number, col: number, tile: Tile): boolean {
     throw new Error("not implemented");
   }
 
-  place(_row: number, _col: number, _tile: Tile): void {}
+  place(row: number, col: number, tile: Tile): void {
+    throw new Error("not implemented");
+  }
 
-  remove(_row: number, _col: number): void {}
+  remove(row: number, col: number): void {
+    throw new Error("not implemented");
+  }
 
   isSolved(): boolean {
     throw new Error("not implemented");

@@ -1,5 +1,6 @@
 export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
 
+// Indexes a Tile's edges in the same top/right/bottom/left order as its fields.
 export enum Side {
   Top = 0,
   Right = 1,
