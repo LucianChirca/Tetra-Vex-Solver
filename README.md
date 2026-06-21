@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/python-3.10+-3776AB?logo=python&logoColor=white" alt="Python 3.10+">
-  <img src="https://img.shields.io/badge/pygame--ce-2.x-00AA00" alt="pygame-ce">
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5">
+  <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" alt="Vite 5">
   <img src="https://img.shields.io/badge/status-WIP-orange" alt="Status: WIP">
 </p>
 
@@ -32,13 +32,14 @@ same digit** — every internal seam must agree.
 
 ## Why this project
 
-A learning playground for **search and constraint satisfaction**, with a UI good
-enough to actually feel the algorithms:
+A learning playground for **search and constraint satisfaction**, runnable in
+the browser so it's one link to share:
 
 - **Play it** — interactive board, drag tiles from the pool, smooth snap.
-- **Watch it solve** — a side view renders the solver's every move: placements,
+- **Watch it solve** — a view renders the solver's every move: placements,
   rejections, and backtracks, live.
-- **Compare strategies** — naive → pruned → optimized backtracking, swappable.
+- **Compare strategies** — the same backtracking core, with progressively more
+  pruning, swappable via `?solver=`.
 
 <!-- TODO: drop real captures once the views are built -->
 <p align="center">
@@ -53,17 +54,58 @@ enough to actually feel the algorithms:
 
 ## How it works
 
-DFS with backtracking, filling the grid from the top-left corner,
-left→right then top→bottom. Three strategies, each a strict improvement:
+**One shared algorithm for every solver:** depth-first search that fills the
+grid in a fixed order — start top-left, go left→right, wrap to the next row,
+top→bottom. Place a tile, recurse; on a dead end, remove it and try the next.
+A `placed[]` array tracks which tiles are in use so backtracking is clean.
 
-| Strategy | Idea | Worst case |
+The solvers differ in **one thing only**: how hard they prune the set of tiles
+worth trying at each cell. Brute force is impractical on its own — the real
+project is layering optimizations onto the backtracking search.
+
+| Strategy | Added optimization | Effect |
 | --- | --- | --- |
-| **Naive** | Try every permutation of tiles, validate the full grid at the end. | `O(n²!)` |
-| **Pruned** | Same DFS, but only place a tile whose left/top edges already match its neighbors — dead branches die early. | far below `n²!` in practice |
-| **Backtracking (optimized)** | Pruned DFS plus a `(side, digit) → tiles` hash map for instant candidate lookup, and a `placed[]` array to unwind cleanly on backtrack. | fastest of the three |
+| **brute-force** | none — try every unused tile | baseline, shows the cost of no pruning |
+| **edge-match** | only try tiles whose top/left digits match the placed neighbors (linear scan) | cuts the vast majority of branches |
+| **indexed** | same constraint via a `(side, digit) → tiles` map | removes the per-cell scan, instant candidate lookup |
 
-The point isn't just *a* solver — it's seeing **why** each refinement prunes the
-search tree, watching the rejected branches disappear in the solver view.
+The point is seeing **why** each refinement shrinks the search tree — watching
+rejected branches vanish in the solver view.
+
+---
+
+## Architecture
+
+Three layers, one-way dependencies. The domain is the shared language; nothing
+flows back into it.
+
+```mermaid
+flowchart TD
+    subgraph UI["gui/ — render + input"]
+        app[App / Views]
+        draw[drawTile]
+    end
+    subgraph SOLVERS["solvers/ — search"]
+        base[BacktrackingSolver]
+        strat[brute-force / edge-match / indexed]
+    end
+    subgraph CORE["core/ — domain (depends on nothing)"]
+        types[Tile / Board / Puzzle]
+        gen[generate]
+    end
+
+    UI --> CORE
+    SOLVERS --> CORE
+    UI -. SolverEvent stream .-> SOLVERS
+    main([main.ts<br/>composition root]) --> UI
+    main --> SOLVERS
+    main --> CORE
+```
+
+- **core** depends on nothing. **solvers** depend on core only — never on the GUI.
+- **gui** renders core state and pulls a solver's `SolverEvent` stream; it holds no solving logic.
+- A solver's output speaks the domain (place tile at row/col), so the UI just replays it.
+- `main.ts` is the only place that wires the three together.
 
 ---
 
@@ -71,21 +113,29 @@ search tree, watching the rejected branches disappear in the solver view.
 
 ```
 tetra_vex_solver/
-├── main.py              entry point — picks play/solve mode, wires it together
-├── game.py              puzzle rules: Tile, Board, edge matching, validation, generate()
-├── gui.py               pygame-ce rendering: App loop, PlayView, SolverView, draw_tile
-├── solvers/
-│   ├── __init__.py      SOLVERS registry
-│   ├── base.py          Solver interface + on_event hook for the GUI
-│   ├── naive.py         strategy 1
-│   ├── pruned.py        strategy 2
-│   └── backtracking.py  strategy 3
-├── assets/              screenshots
-└── requirements.txt
+├── index.html           mounts the app
+├── package.json         scripts + deps (Vite, TypeScript)
+├── tsconfig.json        strict TypeScript config
+├── src/
+│   ├── main.ts          entry — reads ?mode= / ?solver=, wires it together
+│   ├── game.ts          puzzle rules: Tile, Board, COLORS, edge match, generate()
+│   ├── gui/
+│   │   ├── app.ts       canvas + requestAnimationFrame loop, runs a View
+│   │   ├── theme.ts     colors / constants
+│   │   ├── drawTile.ts  draws one tile (4 triangles + digits)
+│   │   ├── playView.ts  interactive drag-and-drop game
+│   │   └── solverView.ts animates a solver's search events
+│   └── solvers/
+│       ├── index.ts     SOLVERS registry
+│       ├── base.ts      shared backtracking core (traversal + backtrack + events)
+│       ├── bruteForce.ts  no pruning
+│       ├── edgeMatch.ts   edge-match pruning
+│       └── indexed.ts     indexed candidate lookup
+└── assets/              screenshots
 ```
 
-The solver and the GUI are decoupled: a solver emits decision events through an
-`on_event` callback, and the `SolverView` just renders whatever it's handed.
+The solver and GUI are decoupled: a solver emits `SolverEvent`s through a
+callback, and `SolverView` just renders whatever it's handed.
 
 ---
 
@@ -94,24 +144,39 @@ The solver and the GUI are decoupled: a solver emits decision events through an
 ```bash
 git clone https://github.com/<you>/tetra_vex_solver.git
 cd tetra_vex_solver
+npm install
 
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
-
-python main.py play     # play it yourself
-python main.py solve    # watch the solver
+npm run dev      # local dev server with hot reload
 ```
 
-> Requires Python 3.10+. Rendering uses **pygame-ce** (SDL2) — no GPU/Metal
-> setup needed; the render load is tiny.
+Then open the printed URL. Add `?mode=solve` to watch the solver, or
+`?solver=edge-match` to pick a strategy.
+
+```bash
+npm run build    # type-check + production build to dist/
+npm run preview  # serve the production build
+```
 
 ---
 
 ## Roadmap
 
+**Foundations**
 - [ ] `game.generate()` — random *solvable* puzzles (build a valid board, shuffle the pool)
-- [ ] `PlayView` — drag-and-drop with snap + win detection
-- [ ] `SolverView` — animated place / reject / backtrack
-- [ ] The three solver strategies
-- [ ] Side-by-side strategy comparison (steps, time, branches pruned)
-- [ ] Larger boards (`4×4`, `5×5`)
+- [ ] Shared backtracking core in `base.ts` (row-major fill + `placed[]` + events)
+- [ ] `drawTile` + `App` canvas loop
+
+**Views**
+- [ ] `PlayView` — drag-and-drop with eased snap + win detection
+- [ ] `SolverView` — animated place / reject / backtrack, with a speed control
+
+**Refining the backtracking solver** *(the core exploration)*
+- [ ] edge-match pruning (only place tiles that fit the neighbors)
+- [ ] indexed candidate lookup — `(side, digit) → tiles`
+- [ ] most-constrained cell / fewest-candidates ordering
+- [ ] forward-checking — detect a cell with zero candidates early
+- [ ] side-by-side strategy comparison (steps, time, branches pruned)
+
+**Stretch**
+- [ ] larger boards (`4×4`, `5×5`)
+```
