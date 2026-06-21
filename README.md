@@ -106,6 +106,7 @@ the GUI.
 
 ### Patterns
 
+- **Layered architecture** : `core` ← `game` ← `gui`/`solvers` ← `main` — dependencies only point inward.
 - **MVC** : keep model, GUI, and rules separate.
 - **Generator (`yield`)** : pause the solver mid-search — so you can watch, pause, and tune its speed.
 - **Two views, one model** : the same game, played by a human (`PlayView`) or a robot (`SolverView`) — both drive the model the same way.
