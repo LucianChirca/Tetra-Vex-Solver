@@ -109,7 +109,6 @@ function SolverScreen({ size }: { size: number }) {
       if (!step()) window.clearInterval(id);
     }, delayFor(speed));
     return () => window.clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running, speed]);
 
   const e = eng.current;
@@ -119,10 +118,11 @@ function SolverScreen({ size }: { size: number }) {
   const slots: (Tile | null)[] = Array.from({ length: size * size }, () => null);
   for (const t of e.model.pool()) slots[t.id] = t;
 
-  // Flash the cell the last reject/backtrack touched (not once we're solved).
+  // Show the candidate the solver last tried-and-dropped in its cell (reject) or
+  // pulled back out (backtrack) — not once we're solved.
   const flash =
     !e.solved && e.last && e.last.kind !== "place"
-      ? { index: e.last.row * size + e.last.col, kind: e.last.kind }
+      ? { index: e.last.row * size + e.last.col, kind: e.last.kind, tile: e.last.tile }
       : null;
 
   const changeSolver = (next: SolverName) => {

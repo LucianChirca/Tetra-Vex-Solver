@@ -120,22 +120,31 @@ body {
    flash (that reads as a blink). */
 @keyframes settle {
   from {
-    transform: scale(0.92);
+    transform: scale(0.96);
   }
   to {
     transform: scale(1);
   }
 }
 
-/* solver feedback: a quick pulse when a candidate is rejected or undone */
-@keyframes flash {
+/* solver feedback: a candidate dropped into a cell, then a quick "nope" shake
+   before it's discarded for the next try */
+@keyframes tryout {
   0% {
-    transform: scale(1);
+    transform: scale(0.9);
+    opacity: 0;
   }
-  35% {
-    transform: scale(0.93);
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  62% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
   }
   100% {
-    transform: scale(1);
+    transform: translateX(0);
   }
 }
