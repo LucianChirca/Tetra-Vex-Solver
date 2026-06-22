@@ -23,8 +23,8 @@ export function App() {
   }, [mode]);
 
   return (
-    <div className="flex flex-col items-center gap-5">
-      <h1 className="text-3xl font-bold tracking-tight text-neutral-100">TetraVex</h1>
+    <div className="flex flex-col items-center gap-4">
+      <h1 className="text-2xl font-bold tracking-tight text-neutral-100">TetraVex</h1>
       <div className="bg-panel border-panel-border flex gap-1 rounded-lg border p-1">
         {(["play", "solve"] as Mode[]).map((m) => (
           <button

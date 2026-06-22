@@ -23,8 +23,11 @@ body {
 }
 
 :root {
-  /* Tile size — shrinks on small screens so the board always fits. */
-  --tile: clamp(3.25rem, 20vw, 6rem);
+  /* Tile size. Two 3×3 panels = 6 tile-rows; the header and footer are fixed,
+     so the tiles (not the chrome) absorb a short viewport: take the smaller of
+     the width-based ideal and the height left over after ~20rem of chrome,
+     split across those 6 rows. Tall screens hit the 6rem cap; short ones shrink. */
+  --tile: min(clamp(3.25rem, 20vw, 6rem), calc((100dvh - 20rem) / 6));
 
   /* Digit palette — read in TS via var(--color-digit-N). Plain custom props,
      not @theme: nothing references them as a utility, and Tailwind prunes
