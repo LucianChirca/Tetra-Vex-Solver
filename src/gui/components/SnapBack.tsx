@@ -22,7 +22,7 @@ export function SnapBack({
   }, [to]);
   return (
     <div
-      className="pointer-events-none fixed z-50 transition-all duration-200 ease-out"
+      className="pointer-events-none fixed z-50 transition-all duration-150 ease-out"
       style={{ left: pos.x, top: pos.y }}
       onTransitionEnd={onDone}
     >
