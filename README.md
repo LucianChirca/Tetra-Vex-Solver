@@ -76,7 +76,7 @@ flowchart TD
     main([main.ts — composition root])
 
     subgraph GUI["gui/ — View (dumb)"]
-        views[Play / Solver views + drawTile]
+        views[Play / Solver views — DOM]
     end
     subgraph GAME["game/ — Model"]
         model[Game: state + rules + generate]
@@ -129,7 +129,7 @@ tetra_vex_solver/
 │   ├── main.ts          composition root — constructs + wires model/view/solver
 │   ├── core/            shared types — Tile, Digit, Side, Puzzle (no behavior)
 │   ├── game/            Model — Game (state) + rules.ts (edge rule) + generate()
-│   ├── gui/             View — App loop, drawTile, playView, solverView
+│   ├── gui/             View — DOM playView/solverView + style.css (no canvas)
 │   └── solvers/         service — shared backtracking core + pruning strategies
 └── assets/              screenshots
 ```
@@ -170,8 +170,8 @@ Suggested order — each step only depends on the ones above it:
 3. `game/generator.ts` — `generate()` random solvable puzzles.
 4. `solvers/base.ts` — the shared `solve()`/`step()` traversal + events.
 5. one strategy's `candidatesFor` (start with `edgeMatch`).
-6. `gui/drawTile.ts` + `gui/app.ts` — render a tile, run the canvas loop.
-7. `PlayView`, then `SolverView`.
+6. `gui/playView.ts` — DOM board + pool + native drag-and-drop (`style.css` is ready).
+7. `gui/solverView.ts` — DOM + a stepper timer that pulls `SolverEvent`s.
 
 > Tip: while implementing, you can flip `noUnusedLocals`/`noUnusedParameters`
 > back on in `tsconfig.json` once bodies read their fields/params.
@@ -183,7 +183,7 @@ Suggested order — each step only depends on the ones above it:
 **Foundations**
 - [ ] `game.generate()` — random *solvable* puzzles (build a valid board, shuffle the pool)
 - [ ] Shared backtracking core in `base.ts` (row-major fill + `placed[]` + events)
-- [ ] `drawTile` + `App` canvas loop
+- [ ] DOM tile rendering + `style.css` (done) — board, pool, tile faces
 
 **Views**
 - [ ] `PlayView` — drag-and-drop with eased snap + win detection

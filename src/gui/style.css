@@ -1,0 +1,125 @@
+/* View DOM. Tile colors arrive as inline vars (--c-top, etc.) from
+   DIGIT_COLORS; rest is layout. Animations are CSS transitions, no render loop. */
+
+:root {
+  --bg: #0a0a0a;
+  --panel: #161616;
+  --panel-border: #2a2a2a;
+  --text: #ffffff;
+  --accent: #f1c40f;
+  --cell-empty: #101010;
+  --tile-size: 96px;
+  --gap: 6px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 system-ui, sans-serif;
+}
+
+/* --- board: n×n grid of drop targets --- */
+.board {
+  display: grid;
+  grid-template-columns: repeat(var(--n), var(--tile-size));
+  grid-template-rows: repeat(var(--n), var(--tile-size));
+  gap: var(--gap);
+  padding: var(--gap);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+
+.cell {
+  background: var(--cell-empty);
+  border-radius: 4px;
+}
+.cell.drag-over {
+  outline: 2px solid var(--accent);
+} /* highlight a legal hovered drop target */
+
+/* --- pool: the tiles not yet placed --- */
+.pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap);
+  max-width: calc(var(--tile-size) * 3 + var(--gap) * 2);
+  padding: var(--gap);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+}
+
+/* --- tile: a square with 4 triangle faces + a digit per edge --- */
+.tile {
+  position: relative;
+  width: var(--tile-size);
+  height: var(--tile-size);
+  cursor: grab;
+  border-radius: 4px;
+  overflow: hidden;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+.tile.dragging {
+  opacity: 0.4;
+}
+.tile.reject {
+  animation: flash-reject 0.3s ease;
+} /* solver: tile rejected at a cell */
+
+.face {
+  position: absolute;
+  inset: 0;
+}
+.face.top {
+  background: var(--c-top);
+  clip-path: polygon(0 0, 100% 0, 50% 50%);
+}
+.face.right {
+  background: var(--c-right);
+  clip-path: polygon(100% 0, 100% 100%, 50% 50%);
+}
+.face.bottom {
+  background: var(--c-bottom);
+  clip-path: polygon(100% 100%, 0 100%, 50% 50%);
+}
+.face.left {
+  background: var(--c-left);
+  clip-path: polygon(0 100%, 0 0, 50% 50%);
+}
+
+.digit {
+  position: absolute;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  transform: translate(-50%, -50%);
+}
+.digit.top {
+  left: 50%;
+  top: 18%;
+}
+.digit.right {
+  left: 82%;
+  top: 50%;
+}
+.digit.bottom {
+  left: 50%;
+  top: 82%;
+}
+.digit.left {
+  left: 18%;
+  top: 50%;
+}
+
+@keyframes flash-reject {
+  50% {
+    box-shadow: 0 0 0 3px #c0392b inset;
+  }
+}

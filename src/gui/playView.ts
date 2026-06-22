@@ -1,12 +1,16 @@
-import type { View } from "./app";
+import type { View } from "./view";
 import type { Game } from "../game";
 
-// Dumb view: renders the model, forwards input, asks the model what's legal.
-// Holds no rules and never mutates state except through the model's methods.
+// Dumb DOM view: builds a board + pool, drags tiles via native HTML5
+// drag-and-drop, asks the model what's legal. No rules, no animation loop.
+// mount() builds .board (n×n .cell grid) + .pool of .tile; drop → isLegalMove
+// → place → re-render. style.css targets these classes.
 export class PlayView implements View {
+  private root: HTMLElement | null = null;
+
   constructor(private readonly model: Game) {}
 
-  handlePointer(e: PointerEvent): void {}
-  update(dt: number): void {}
-  draw(ctx: CanvasRenderingContext2D): void {}
+  mount(parent: HTMLElement): void {}
+
+  destroy(): void {}
 }

@@ -22,5 +22,3 @@ export const THEME = {
   accent: "#F1C40F",
   cellEmpty: "#101010",
 };
-
-export const FPS = 60;

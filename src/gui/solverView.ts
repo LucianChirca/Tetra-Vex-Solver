@@ -1,23 +1,27 @@
-import type { View } from "./app";
+import type { View } from "./view";
 import type { Game } from "../game";
 import type { BacktrackingSolver, SolverEvent } from "../solvers";
 
-// Triggers a solver and renders its progress. `model` is the replay target:
-// the solver emits SolverEvents (its own internal model stays private) and the
-// view applies them to `model`, which is the single source of what's drawn.
+// Runs a solver, renders its progress as DOM. The solver yields SolverEvents;
+// a timer pulls one per tick and applies it to `model` (the draw source).
+// GUI owns the clock: play/pause = timer on/off, speed = interval, step = one
+// tick. CSS transitions animate each place/reject/backtrack.
 export class SolverView implements View {
+  private root: HTMLElement | null = null;
   private steps: Generator<SolverEvent, boolean, void> | null = null;
+  private timer: number | null = null;
 
   constructor(
     private readonly model: Game,
     private readonly solver: BacktrackingSolver,
   ) {}
 
-  start(): void {
-    // kick off the solver generator: this.steps = this.solver.solve();
-    throw new Error("not implemented");
+  mount(parent: HTMLElement): void {
+    // build DOM, then kick off: this.steps = this.solver.solve();
   }
 
-  update(dt: number): void {}
-  draw(ctx: CanvasRenderingContext2D): void {}
+  destroy(): void {}
+
+  // Pull one decision and render it; stop when the generator is done.
+  private tick(): void {}
 }

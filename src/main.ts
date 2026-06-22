@@ -1,5 +1,6 @@
+import "./gui/style.css";
 import { Game, generate } from "./game";
-import { App, PlayView, SolverView } from "./gui";
+import { PlayView, SolverView, type View } from "./gui";
 import { SOLVERS, type SolverName } from "./solvers";
 
 type Mode = "play" | "solve";
@@ -15,16 +16,17 @@ function main(): void {
   const mount = document.getElementById("app")!;
   const puzzle = generate(BOARD_SIZE);
   const model = new Game(puzzle);
-  const app = new App(mount, BOARD_SIZE);
 
+  let view: View;
   if (mode === "solve") {
     const raw = params.get("solver");
     const name: SolverName = raw && raw in SOLVERS ? (raw as SolverName) : DEFAULT_SOLVER;
     const solver = new SOLVERS[name](puzzle);
-    app.run(new SolverView(model, solver));
+    view = new SolverView(model, solver);
   } else {
-    app.run(new PlayView(model));
+    view = new PlayView(model);
   }
+  view.mount(mount);
 }
 
 main();
