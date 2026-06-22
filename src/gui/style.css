@@ -21,9 +21,8 @@ body {
 }
 
 :root {
-  /* Tile size — shrinks on small screens so the board, pool, and controls all
-     fit with room to spare (two 3×3 panels stack vertically on a phone). */
-  --tile: clamp(2.5rem, 13vw, 4.5rem);
+  /* Tile size — shrinks on small screens so the board always fits. */
+  --tile: clamp(3.25rem, 20vw, 6rem);
 
   /* Digit palette — read in TS via var(--color-digit-N). Plain custom props,
      not @theme: nothing references them as a utility, and Tailwind prunes

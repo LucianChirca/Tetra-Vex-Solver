@@ -137,7 +137,7 @@ function SolverScreen({ size }: { size: number }) {
   };
 
   return (
-    <div className="flex w-[min(92vw,24rem)] flex-col items-center gap-4">
+    <div className="flex w-[min(92vw,24rem)] flex-col items-center gap-5">
       <Board size={size} cells={cells} flash={flash} solved={e.solved} />
 
       <div className="flex h-5 items-center">
@@ -155,23 +155,8 @@ function SolverScreen({ size }: { size: number }) {
 
       <Pool size={size} slots={slots} />
 
-      <div className="flex min-h-20 w-full flex-col gap-3">
-        {/* speed — full width and icon-flanked, so it never clips on mobile */}
-        <div className="flex items-center gap-3 text-base text-neutral-500">
-          <span aria-hidden>🐢</span>
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={speed}
-            onChange={(ev) => setSpeed(Number(ev.target.value))}
-            aria-label="Solver speed"
-            className="accent-accent h-1.5 flex-1 cursor-pointer"
-          />
-          <span aria-hidden>🐇</span>
-        </div>
-
-        {/* strategy grows to fill; two actions keep a fixed width */}
+      {/* compact footer: one row of controls + a thin speed slider underneath */}
+      <div className="flex min-h-14 w-full flex-col justify-center gap-2">
         <div className="flex items-center gap-2">
           <select
             value={name}
@@ -193,6 +178,21 @@ function SolverScreen({ size }: { size: number }) {
           >
             {e.done ? "Restart" : running ? "Pause" : "Solve"}
           </button>
+        </div>
+
+        {/* speed — thin, full width, icon-flanked so it never clips */}
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <span aria-hidden>🐢</span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={speed}
+            onChange={(ev) => setSpeed(Number(ev.target.value))}
+            aria-label="Solver speed"
+            className="accent-accent h-1 flex-1 cursor-pointer"
+          />
+          <span aria-hidden>🐇</span>
         </div>
       </div>
     </div>
