@@ -156,7 +156,7 @@ function SolverScreen({ size }: { size: number }) {
       <Pool size={size} slots={slots} />
 
       {/* compact footer: one row of controls + a thin speed slider underneath */}
-      <div className="flex min-h-14 w-full flex-col justify-center gap-2">
+      <div className="flex min-h-16 w-full flex-col justify-center gap-2">
         <div className="flex items-center gap-2">
           <select
             value={name}

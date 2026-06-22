@@ -164,7 +164,7 @@ export function PlayScreen({ newController }: { newController: () => PlayControl
 
       {/* fixed-height footer so Play and Solve occupy the same space — toggling
           modes swaps the content without shifting the chrome above */}
-      <div className="flex min-h-14 flex-col items-center justify-center">
+      <div className="flex min-h-16 flex-col items-center justify-center">
         <div className="flex gap-3">
           <button onClick={newBoard} className="btn">
             New

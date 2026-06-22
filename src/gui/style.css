@@ -23,11 +23,16 @@ body {
 }
 
 :root {
-  /* Tile size. Two 3×3 panels = 6 tile-rows; the header and footer are fixed,
-     so the tiles (not the chrome) absorb a short viewport: take the smaller of
-     the width-based ideal and the height left over after ~20rem of chrome,
-     split across those 6 rows. Tall screens hit the 6rem cap; short ones shrink. */
-  --tile: min(clamp(3.25rem, 20vw, 6rem), calc((100dvh - 20rem) / 6));
+  /* Tile size — the board+pool fill whatever the fixed header/footer leave,
+     bounded by whichever runs out first:
+       - width:  3 tiles fit the panel (min(92vw, 24rem) wide), or
+       - height: 6 tile-rows fit the space after ~20rem of chrome,
+     capped at 6.5rem so it isn't huge on a big monitor. */
+  --tile: min(
+    calc((min(92vw, 24rem) - 1.5rem) / 3),
+    calc((100dvh - 20rem) / 6),
+    6.5rem
+  );
 
   /* Digit palette — read in TS via var(--color-digit-N). Plain custom props,
      not @theme: nothing references them as a utility, and Tailwind prunes
