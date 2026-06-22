@@ -32,8 +32,10 @@ export function Pool({
           {tile && (
             <Tile
               tile={tile}
-              className={draggingId === tile.id ? "opacity-30" : "hover:scale-105"}
-              onPointerDown={(e) => onTilePointerDown?.(tile.id, e)}
+              className={
+                draggingId === tile.id ? "opacity-30" : onTilePointerDown ? "hover:scale-105" : ""
+              }
+              onPointerDown={onTilePointerDown ? (e) => onTilePointerDown(tile.id, e) : undefined}
             />
           )}
         </div>
