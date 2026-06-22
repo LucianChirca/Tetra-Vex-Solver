@@ -22,11 +22,19 @@ const DIGIT_POS = {
 // --color-digit-N in style.css.
 export function Tile({ tile, draggable = false }: { tile: TileModel; draggable?: boolean }) {
   return (
-    <div className="relative w-24 h-24 rounded overflow-hidden transition-transform" draggable={draggable}>
+    <div
+      className="relative h-24 w-24 overflow-hidden rounded transition-transform"
+      draggable={draggable}
+    >
       {SIDES.map((s) => (
         <Fragment key={s}>
-          <div className={`absolute inset-0 ${FACE_CLIP[s]}`} style={{ background: `var(--color-digit-${tile[s]})` }} />
-          <span className={`absolute z-10 font-bold text-white -translate-x-1/2 -translate-y-1/2 ${DIGIT_POS[s]}`}>
+          <div
+            className={`absolute inset-0 ${FACE_CLIP[s]}`}
+            style={{ background: `var(--color-digit-${tile[s]})` }}
+          />
+          <span
+            className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 font-bold text-white ${DIGIT_POS[s]}`}
+          >
             {tile[s]}
           </span>
         </Fragment>

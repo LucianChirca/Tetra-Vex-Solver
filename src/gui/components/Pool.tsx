@@ -5,7 +5,7 @@ import { PANEL } from "./panel";
 // Presentational tile pool: the draggable source tiles not yet placed.
 export function Pool({ tiles }: { tiles: readonly TileModel[] }) {
   return (
-    <div className={`flex flex-wrap max-w-[19.5rem] ${PANEL}`}>
+    <div className={`flex max-w-[19.5rem] flex-wrap ${PANEL}`}>
       {tiles.map((t) => (
         <Tile key={t.id} tile={t} draggable />
       ))}

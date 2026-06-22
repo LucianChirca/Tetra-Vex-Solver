@@ -6,7 +6,10 @@ import { PANEL } from "./panel";
 export function Board({ n, cells }: { n: number; cells: readonly (TileModel | null)[] }) {
   const track = `repeat(${n}, 6rem)`;
   return (
-    <div className={`grid ${PANEL}`} style={{ gridTemplateColumns: track, gridTemplateRows: track }}>
+    <div
+      className={`grid ${PANEL}`}
+      style={{ gridTemplateColumns: track, gridTemplateRows: track }}
+    >
       {cells.map((tile, i) => (
         <div key={i} className="bg-cell rounded">
           {tile && <Tile tile={tile} />}
