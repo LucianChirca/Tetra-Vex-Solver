@@ -17,9 +17,14 @@ export interface Tile {
   readonly left: Digit;
 }
 
-// `solution` is for win-checking/tests only — never handed to a solver.
+// What a solver gets: the pool, no answer key.
 export interface Puzzle {
   readonly n: number;
   readonly tiles: readonly Tile[];
+}
+
+// Puzzle + its answer key — for generation/win-checking/tests only.
+// NEVER passed to a solver; that's the whole point of keeping it separate.
+export interface SolvedPuzzle extends Puzzle {
   readonly solution: readonly Tile[]; // index = row * n + col
 }

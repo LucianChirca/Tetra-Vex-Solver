@@ -6,13 +6,13 @@ export class Game {
   readonly n: number;
   private readonly grid: (Tile | null)[]; // row-major, length n*n
   private readonly remaining: Tile[]; // tiles not yet placed (the pool)
-  private readonly solution: readonly Tile[]; // for win-checking; never shown to a solver
 
+  // Takes a solution-free Puzzle: the model never needs the answer key, and the
+  // solver builds its own Game from a Puzzle — so it can't peek at the solution.
   constructor(puzzle: Puzzle) {
     this.n = puzzle.n;
     this.grid = new Array(puzzle.n * puzzle.n).fill(null);
     this.remaining = [...puzzle.tiles];
-    this.solution = puzzle.solution;
   }
 
   at(row: number, col: number): Tile | null {
@@ -36,6 +36,8 @@ export class Game {
     throw new Error("not implemented");
   }
 
+  // Structural check: grid full + every seam agrees. No answer-key compare —
+  // a valid TetraVex layout is correct by construction.
   isSolved(): boolean {
     throw new Error("not implemented");
   }
