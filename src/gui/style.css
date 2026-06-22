@@ -115,14 +115,27 @@ body {
   top: 50%;
 }
 
-/* a tile settling into a board cell — subtle, no bounce */
+/* a tile settling into a board cell — quick to move, then decelerates softly
+   into place (the easing lives on the animation). No overshoot, no opacity
+   flash (that reads as a blink). */
 @keyframes settle {
   from {
-    transform: scale(0.97);
-    opacity: 0;
+    transform: scale(0.92);
   }
   to {
     transform: scale(1);
-    opacity: 1;
+  }
+}
+
+/* solver feedback: a quick pulse when a candidate is rejected or undone */
+@keyframes flash {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(0.93);
+  }
+  100% {
+    transform: scale(1);
   }
 }
