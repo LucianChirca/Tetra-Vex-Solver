@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+/* Lock the page: no scroll / pull-to-refresh / bounce. The board is a fixed
+   play surface, and letting touch scroll hijacks a drag (the pointer gets
+   cancelled mid-drag, stranding the floating tile). */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+
 /* Chrome palette — backs the bg-/text-/border- utilities used in markup. */
 @theme {
   --color-bg: #0a0a0a;
