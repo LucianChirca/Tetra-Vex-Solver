@@ -12,15 +12,74 @@
 /* Digit palette — read in TS via var(--color-digit-N). Plain custom props, not
    @theme: nothing references them as a utility, and Tailwind prunes unused
    @theme vars. */
+/* Tile geometry — clip-paths and digit positions don't map to clean Tailwind
+   utilities, so they live here as semantic classes. */
+.tile {
+  position: relative;
+  width: 6rem;
+  height: 6rem;
+  overflow: hidden;
+  border-radius: 0.25rem;
+  /* custom pointer drag — suppress native image drag / text selection */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  touch-action: none;
+}
+.face,
+.digit {
+  pointer-events: none; /* pointer events resolve to the tile / drop target */
+}
+.face {
+  position: absolute;
+  inset: 0;
+}
+.face-top {
+  clip-path: polygon(0 0, 100% 0, 50% 50%);
+}
+.face-right {
+  clip-path: polygon(100% 0, 100% 100%, 50% 50%);
+}
+.face-bottom {
+  clip-path: polygon(100% 100%, 0 100%, 50% 50%);
+}
+.face-left {
+  clip-path: polygon(0 100%, 0 0, 50% 50%);
+}
+.digit {
+  position: absolute;
+  z-index: 10;
+  transform: translate(-50%, -50%);
+  font-weight: 700;
+  color: #fff;
+}
+.digit-top {
+  left: 50%;
+  top: 18%;
+}
+.digit-right {
+  left: 82%;
+  top: 50%;
+}
+.digit-bottom {
+  left: 50%;
+  top: 82%;
+}
+.digit-left {
+  left: 18%;
+  top: 50%;
+}
+
 :root {
-  --color-digit-0: #c0392b;
-  --color-digit-1: #2e86de;
-  --color-digit-2: #27ae60;
-  --color-digit-3: #e67e22;
-  --color-digit-4: #7d3c98;
-  --color-digit-5: #16a085;
-  --color-digit-6: #1abc9c;
-  --color-digit-7: #c2185b;
-  --color-digit-8: #5d4037;
-  --color-digit-9: #566573;
+  /* Sampled from the reference screenshot (assets/tetravex-app.png). */
+  --color-digit-0: #d22f2f; /* red */
+  --color-digit-1: #1976d1; /* blue */
+  --color-digit-2: #388e3c; /* green */
+  --color-digit-3: #fbc02d; /* amber */
+  --color-digit-4: #7b1fa2; /* purple */
+  --color-digit-5: #f47c00; /* orange */
+  --color-digit-6: #0097a7; /* cyan */
+  --color-digit-7: #c2185b; /* pink */
+  --color-digit-8: #5d4037; /* brown */
+  --color-digit-9: #455a64; /* slate */
 }
