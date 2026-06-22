@@ -197,4 +197,11 @@ Suggested order — each step only depends on the ones above it:
 
 **Stretch**
 - [ ] larger boards (`4×4`, `5×5`)
+
+**Maybe / later**
+- [ ] a non-yielding solver variant — the `yield`-per-decision generator is what
+      makes the search watchable, but the per-step pause/resume costs speed. A
+      separate solver that runs the same search without `yield` would be faster
+      when you only want the answer, not the animation.
+- [ ] benchmark yielding vs non-yielding (way later — only once both exist)
 ```
