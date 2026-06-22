@@ -6,7 +6,8 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5">
-  <img src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white" alt="Vite 5">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" alt="React 19">
+  <img src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" alt="Vite 8">
   <img src="https://img.shields.io/badge/status-WIP-orange" alt="Status: WIP">
 </p>
 
@@ -76,7 +77,7 @@ flowchart TD
     main([main.ts — composition root])
 
     subgraph GUI["gui/ — View (dumb)"]
-        views[Play / Solver views — DOM]
+        views[Play / Solver views — React]
     end
     subgraph GAME["game/ — Model"]
         model[Game: state + rules + generate]
@@ -129,7 +130,7 @@ tetra_vex_solver/
 │   ├── main.ts          composition root — constructs + wires model/view/solver
 │   ├── core/            shared types — Tile, Digit, Side, Puzzle (no behavior)
 │   ├── game/            Model — Game (state) + rules.ts (edge rule) + generate()
-│   ├── gui/             View — DOM playView/solverView + style.css (no canvas)
+│   ├── gui/             View — React playView.tsx/solverView + style.css
 │   └── solvers/         service — shared backtracking core + pruning strategies
 └── assets/              screenshots
 ```
@@ -170,8 +171,8 @@ Suggested order — each step only depends on the ones above it:
 3. `game/generator.ts` — `generate()` random solvable puzzles.
 4. `solvers/base.ts` — the shared `solve()`/`step()` traversal + events.
 5. one strategy's `candidatesFor` (start with `edgeMatch`).
-6. `gui/playView.ts` — DOM board + pool + native drag-and-drop (`style.css` is ready).
-7. `gui/solverView.ts` — DOM + a stepper timer that pulls `SolverEvent`s.
+6. `gui/playView.tsx` — React board + pool + drag-and-drop (`style.css` is ready).
+7. `gui/solverView.ts` — a stepper timer that pulls `SolverEvent`s.
 
 > Tip: while implementing, you can flip `noUnusedLocals`/`noUnusedParameters`
 > back on in `tsconfig.json` once bodies read their fields/params.

@@ -11,6 +11,7 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "noEmit": true,
+    "jsx": "react-jsx",
 
     // Scaffold phase: stubs declare fields/params they don't read yet.
     // Re-enable both once bodies are implemented.

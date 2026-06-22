@@ -4,7 +4,7 @@
   "description": "Play the TetraVex edge-matching puzzle and watch a backtracking solver crack it.",
   "type": "module",
   "engines": {
-    "node": ">=18"
+    "node": ">=20.19"
   },
   "scripts": {
     "dev": "vite",
@@ -13,7 +13,14 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.2",
     "typescript": "^5.4.0",
-    "vite": "^5.2.0"
+    "vite": "^8.0.16"
+  },
+  "dependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }
