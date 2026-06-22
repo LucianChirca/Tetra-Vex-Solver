@@ -9,69 +9,13 @@
   --color-accent: #f1c40f;
 }
 
-/* Digit palette — read in TS via var(--color-digit-N). Plain custom props, not
-   @theme: nothing references them as a utility, and Tailwind prunes unused
-   @theme vars. */
-/* Tile geometry — clip-paths and digit positions don't map to clean Tailwind
-   utilities, so they live here as semantic classes. */
-.tile {
-  position: relative;
-  width: 6rem;
-  height: 6rem;
-  overflow: hidden;
-  border-radius: 0.25rem;
-  /* custom pointer drag — suppress native image drag / text selection */
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-user-drag: none;
-  touch-action: none;
-}
-.face,
-.digit {
-  pointer-events: none; /* pointer events resolve to the tile / drop target */
-}
-.face {
-  position: absolute;
-  inset: 0;
-}
-.face-top {
-  clip-path: polygon(0 0, 100% 0, 50% 50%);
-}
-.face-right {
-  clip-path: polygon(100% 0, 100% 100%, 50% 50%);
-}
-.face-bottom {
-  clip-path: polygon(100% 100%, 0 100%, 50% 50%);
-}
-.face-left {
-  clip-path: polygon(0 100%, 0 0, 50% 50%);
-}
-.digit {
-  position: absolute;
-  z-index: 10;
-  transform: translate(-50%, -50%);
-  font-weight: 700;
-  color: #fff;
-}
-.digit-top {
-  left: 50%;
-  top: 18%;
-}
-.digit-right {
-  left: 82%;
-  top: 50%;
-}
-.digit-bottom {
-  left: 50%;
-  top: 82%;
-}
-.digit-left {
-  left: 18%;
-  top: 50%;
-}
-
 :root {
-  /* Sampled from the reference screenshot (assets/tetravex-app.png). */
+  /* Tile size — shrinks on small screens so the board always fits. */
+  --tile: clamp(3.25rem, 20vw, 6rem);
+
+  /* Digit palette — read in TS via var(--color-digit-N). Plain custom props,
+     not @theme: nothing references them as a utility, and Tailwind prunes
+     unused @theme vars. Sampled from assets/tetravex-app.png. */
   --color-digit-0: #d22f2f; /* red */
   --color-digit-1: #1976d1; /* blue */
   --color-digit-2: #388e3c; /* green */
@@ -82,4 +26,92 @@
   --color-digit-7: #c2185b; /* pink */
   --color-digit-8: #5d4037; /* brown */
   --color-digit-9: #455a64; /* slate */
+}
+
+/* --- reusable pieces --- */
+.panel {
+  @apply border-panel-border bg-panel gap-1.5 rounded-lg border p-1.5;
+}
+.btn {
+  @apply border-panel-border bg-panel rounded-md border px-4 py-1.5 text-xs font-semibold tracking-wider text-neutral-300 uppercase transition-colors;
+}
+.btn:hover {
+  @apply bg-panel-border border-neutral-600 text-white;
+}
+.btn:active {
+  @apply scale-95;
+}
+
+/* --- tile (BEM) — geometry that doesn't map to clean Tailwind utilities --- */
+.tile {
+  position: relative;
+  width: var(--tile);
+  height: var(--tile);
+  overflow: hidden;
+  border-radius: 0.25rem;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+  /* custom pointer drag — suppress native image drag, selection, iOS callout */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+}
+.tile__face,
+.tile__digit {
+  pointer-events: none; /* pointer events resolve to the tile / drop target */
+}
+.tile__face {
+  position: absolute;
+  inset: 0;
+}
+.tile__face--top {
+  clip-path: polygon(0 0, 100% 0, 50% 50%);
+}
+.tile__face--right {
+  clip-path: polygon(100% 0, 100% 100%, 50% 50%);
+}
+.tile__face--bottom {
+  clip-path: polygon(100% 100%, 0 100%, 50% 50%);
+}
+.tile__face--left {
+  clip-path: polygon(0 100%, 0 0, 50% 50%);
+}
+.tile__digit {
+  position: absolute;
+  z-index: 10;
+  transform: translate(-50%, -50%);
+  font-weight: 700;
+  font-size: calc(var(--tile) * 0.22);
+  color: #fff;
+}
+.tile__digit--top {
+  left: 50%;
+  top: 18%;
+}
+.tile__digit--right {
+  left: 82%;
+  top: 50%;
+}
+.tile__digit--bottom {
+  left: 50%;
+  top: 82%;
+}
+.tile__digit--left {
+  left: 18%;
+  top: 50%;
+}
+
+/* a tile settling into a board cell — subtle, no bounce */
+@keyframes settle {
+  from {
+    transform: scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }

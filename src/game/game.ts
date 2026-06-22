@@ -25,12 +25,23 @@ export class Game {
     return this.remaining;
   }
 
-  // Free placement: TetraVex lets you drop a tile in any empty cell. Edge
-  // matching is the *win* condition (see isSolved), not a placement rule — the
-  // solver enforces matching itself via its candidate pruning.
-  isLegalMove(row: number, col: number, _tile: Tile): boolean {
+  // In bounds, empty, and matching every present neighbor — you can only place
+  // a tile where its edges agree (seamAgrees, from ./rules). `side` is the
+  // direction from this cell to the neighbor.
+  isLegalMove(row: number, col: number, tile: Tile): boolean {
     if (row < 0 || col < 0 || row >= this.n || col >= this.n) return false;
-    return this.at(row, col) === null;
+    if (this.at(row, col) !== null) return false;
+    const neighbors: [Side, number, number][] = [
+      [Side.Top, row - 1, col],
+      [Side.Right, row, col + 1],
+      [Side.Bottom, row + 1, col],
+      [Side.Left, row, col - 1],
+    ];
+    for (const [side, nr, nc] of neighbors) {
+      const nb = nr < 0 || nc < 0 || nr >= this.n || nc >= this.n ? null : this.at(nr, nc);
+      if (nb && !seamAgrees(tile, side, nb)) return false;
+    }
+    return true;
   }
 
   place(row: number, col: number, tile: Tile): void {

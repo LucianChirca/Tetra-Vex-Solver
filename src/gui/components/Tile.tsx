@@ -10,26 +10,22 @@ const SIDES = ["top", "right", "bottom", "left"] as const;
 export function Tile({
   tile,
   onPointerDown,
-  onDoubleClick,
-  dragging = false,
+  className = "",
 }: {
   tile: TileModel;
   onPointerDown?: (e: PointerEvent) => void;
-  onDoubleClick?: () => void;
-  dragging?: boolean;
+  className?: string;
 }) {
-  const klass = ["tile", onPointerDown && "cursor-grab", dragging && "opacity-30"]
-    .filter(Boolean)
-    .join(" ");
+  const klass = ["tile", onPointerDown && "cursor-grab", className].filter(Boolean).join(" ");
   return (
-    <div className={klass} onPointerDown={onPointerDown} onDoubleClick={onDoubleClick}>
+    <div className={klass} onPointerDown={onPointerDown}>
       {SIDES.map((side) => (
         <Fragment key={side}>
           <div
-            className={`face face-${side}`}
+            className={`tile__face tile__face--${side}`}
             style={{ background: `var(--color-digit-${tile[side]})` }}
           />
-          <span className={`digit digit-${side}`}>{tile[side]}</span>
+          <span className={`tile__digit tile__digit--${side}`}>{tile[side]}</span>
         </Fragment>
       ))}
     </div>

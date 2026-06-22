@@ -1,7 +1,7 @@
 import type { PointerEvent } from "react";
 import type { Tile as TileModel } from "../../core";
 import { Tile } from "./Tile";
-import { PANEL, track } from "./panel";
+import { track } from "./panel";
 
 // Presentational tile pool: a fixed n×n grid of home slots. slots[i] = the tile
 // whose home is slot i, or null when that tile is on the board. Tiles never
@@ -12,20 +12,18 @@ export function Pool({
   slots,
   draggingId,
   onTilePointerDown,
-  onTileDoubleClick,
   onHoverChange,
 }: {
   n: number;
   slots: readonly (TileModel | null)[];
   draggingId?: number | null;
   onTilePointerDown?: (tileId: number, e: PointerEvent) => void;
-  onTileDoubleClick?: (tileId: number) => void;
   onHoverChange?: (over: boolean) => void;
 }) {
   return (
     <div
-      className={`grid ${PANEL}`}
-      style={{ gridTemplateColumns: track(n) }}
+      className="panel grid"
+      style={{ gridTemplateColumns: track(n), gridAutoRows: "var(--tile)" }}
       onPointerEnter={() => onHoverChange?.(true)}
       onPointerLeave={() => onHoverChange?.(false)}
     >
@@ -34,12 +32,11 @@ export function Pool({
           <Tile
             key={i}
             tile={tile}
-            dragging={draggingId === tile.id}
+            className={draggingId === tile.id ? "opacity-30" : "hover:scale-105"}
             onPointerDown={(e) => onTilePointerDown?.(tile.id, e)}
-            onDoubleClick={() => onTileDoubleClick?.(tile.id)}
           />
         ) : (
-          <div key={i} className="bg-cell h-24 w-24 rounded" />
+          <div key={i} className="bg-cell rounded" />
         ),
       )}
     </div>
