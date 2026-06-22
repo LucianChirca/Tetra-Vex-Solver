@@ -5,7 +5,7 @@ import { SOLVERS, type SolverName } from "./solvers";
 
 type Mode = "play" | "solve";
 
-const BOARD_SIZE = 2;
+const BOARD_SIZE = 3;
 const DEFAULT_MODE: Mode = "play";
 const DEFAULT_SOLVER: SolverName = "indexed";
 
