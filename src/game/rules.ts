@@ -6,19 +6,33 @@ import type { Digit, Tile } from "../core";
 // (isLegalMove) and the solvers (candidate pruning) so the constraint is never
 // written twice.
 
-// The side of a neighbor that touches `side` of the current cell
-// (e.g. my Right edge meets the neighbor's Left edge).
+const OPPOSITE: Record<Side, Side> = {
+  [Side.Top]: Side.Bottom,
+  [Side.Right]: Side.Left,
+  [Side.Bottom]: Side.Top,
+  [Side.Left]: Side.Right,
+};
+
+// The side of a neighbor that touches `side` of the current cell.
 export function opposite(side: Side): Side {
-  throw new Error("not implemented");
+  return OPPOSITE[side];
 }
 
 // A tile's digit on the given side.
 export function edge(tile: Tile, side: Side): Digit {
-  throw new Error("not implemented");
+  switch (side) {
+    case Side.Top:
+      return tile.top;
+    case Side.Right:
+      return tile.right;
+    case Side.Bottom:
+      return tile.bottom;
+    case Side.Left:
+      return tile.left;
+  }
 }
 
 // Does `tile` agree with the `neighbor` sitting on its `side`?
-// True iff edge(tile, side) === edge(neighbor, opposite(side)).
 export function seamAgrees(tile: Tile, side: Side, neighbor: Tile): boolean {
-  throw new Error("not implemented");
+  return edge(tile, side) === edge(neighbor, opposite(side));
 }
