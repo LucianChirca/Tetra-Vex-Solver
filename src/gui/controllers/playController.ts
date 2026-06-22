@@ -6,7 +6,7 @@ import type { Tile } from "../../core";
 // on its own and independent of how dragging is wired.
 //
 // Pool layout is fixed: a tile's home slot is its id (generate() numbers tiles
-// 0..n²-1 in pool order). A tile is either in its home slot or on a board cell;
+// 0..size²-1 in pool order). A tile is either in its home slot or on a board cell;
 // returning to the pool always lands in that same slot.
 export class PlayController {
   private readonly byId = new Map<number, Tile>();
@@ -15,8 +15,8 @@ export class PlayController {
     for (const t of model.pool()) this.byId.set(t.id, t);
   }
 
-  get n(): number {
-    return this.model.n;
+  get size(): number {
+    return this.model.size;
   }
 
   tile(id: number): Tile | null {
@@ -24,13 +24,13 @@ export class PlayController {
   }
 
   private rc(index: number): [number, number] {
-    return [Math.floor(index / this.model.n), index % this.model.n];
+    return [Math.floor(index / this.model.size), index % this.model.size];
   }
 
   // Board cells, row-major. null = empty.
   boardCells(): (Tile | null)[] {
-    const n = this.model.n;
-    return Array.from({ length: n * n }, (_, i) => this.model.at(...this.rc(i)));
+    const size = this.model.size;
+    return Array.from({ length: size * size }, (_, i) => this.model.at(...this.rc(i)));
   }
 
   // Pool slots, indexed by home slot (= tile id). null = that tile is on the board.
@@ -87,8 +87,8 @@ export class PlayController {
 
   // Move every placed tile back to the pool (each to its own home slot).
   reset(): void {
-    const n = this.model.n;
-    for (let i = 0; i < n * n; i++) {
+    const size = this.model.size;
+    for (let i = 0; i < size * size; i++) {
       if (this.model.at(...this.rc(i))) this.model.remove(...this.rc(i));
     }
   }

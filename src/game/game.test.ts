@@ -9,7 +9,7 @@ const A: Tile = { id: 0, top: 1, right: 2, bottom: 3, left: 4 };
 const B: Tile = { id: 1, top: 5, right: 6, bottom: 7, left: 2 };
 const C: Tile = { id: 2, top: 3, right: 8, bottom: 9, left: 0 };
 const D: Tile = { id: 3, top: 7, right: 1, bottom: 2, left: 8 };
-const puzzle: Puzzle = { n: 2, tiles: [A, B, C, D] };
+const puzzle: Puzzle = { size: 2, tiles: [A, B, C, D] };
 
 describe("Game rules", () => {
   it("allows placing on an empty cell with no neighbors", () => {

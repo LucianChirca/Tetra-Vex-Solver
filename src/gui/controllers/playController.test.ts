@@ -5,15 +5,15 @@ import { PlayController } from "./playController";
 
 // 2×2 of identical tiles (all edges equal) so every placement matches — lets
 // these tests exercise the move mechanics without fighting the matching rule.
-function uniform(n = 2): Puzzle {
-  const tiles: Tile[] = Array.from({ length: n * n }, (_, id) => ({
+function uniform(size = 2): Puzzle {
+  const tiles: Tile[] = Array.from({ length: size * size }, (_, id) => ({
     id,
     top: 0,
     right: 0,
     bottom: 0,
     left: 0,
   }));
-  return { n, tiles };
+  return { size, tiles };
 }
 
 const ids = (cells: (Tile | null)[]) => cells.map((t) => t?.id ?? null);
@@ -83,7 +83,7 @@ describe("PlayController", () => {
       { id: 2, top: 0, right: 0, bottom: 0, left: 0 },
       { id: 3, top: 0, right: 0, bottom: 0, left: 0 },
     ];
-    const k = new PlayController(new Game({ n: 2, tiles }));
+    const k = new PlayController(new Game({ size: 2, tiles }));
     expect(k.placeOnCell(0, 0)).toBe(true); // tile 0 at top-left
     expect(k.placeOnCell(1, 1)).toBe(false); // tile 1 to its right — edges clash
     expect(k.boardCells()[1]).toBeNull();

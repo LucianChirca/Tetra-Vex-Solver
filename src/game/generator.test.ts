@@ -12,10 +12,10 @@ function permutations<T>(arr: T[]): T[][] {
 
 // Place a permutation row-major; strict placement throws on a clash → that
 // arrangement isn't a solution.
-function solves(n: number, tiles: Tile[], order: Tile[]): boolean {
-  const g = new Game({ n, tiles });
+function solves(size: number, tiles: Tile[], order: Tile[]): boolean {
+  const g = new Game({ size, tiles });
   try {
-    order.forEach((tile, i) => g.place(Math.floor(i / n), i % n, tile));
+    order.forEach((tile, i) => g.place(Math.floor(i / size), i % size, tile));
   } catch {
     return false;
   }
@@ -23,7 +23,7 @@ function solves(n: number, tiles: Tile[], order: Tile[]): boolean {
 }
 
 describe("generate", () => {
-  it("returns n² tiles with home-slot ids and valid digits", () => {
+  it("returns size² tiles with home-slot ids and valid digits", () => {
     const { tiles } = generate(2);
     expect(tiles).toHaveLength(4);
     expect(tiles.map((t) => t.id).sort()).toEqual([0, 1, 2, 3]);
@@ -37,9 +37,9 @@ describe("generate", () => {
 
   it("produces a solvable puzzle (some arrangement wins)", () => {
     for (let run = 0; run < 20; run++) {
-      const { n, tiles } = generate(2);
+      const { size, tiles } = generate(2);
       const pool = [...tiles];
-      const ok = permutations(pool).some((order) => solves(n, pool, order));
+      const ok = permutations(pool).some((order) => solves(size, pool, order));
       expect(ok).toBe(true);
     }
   });

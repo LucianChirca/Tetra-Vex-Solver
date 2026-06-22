@@ -20,6 +20,6 @@ export interface Tile {
 // The puzzle: a pool of tiles to place. No answer key — win-checking is
 // structural (grid full + every seam agrees), so nothing needs the solution.
 export interface Puzzle {
-  readonly n: number;
+  readonly size: number; // side length: an n×n board has size n
   readonly tiles: readonly Tile[];
 }
