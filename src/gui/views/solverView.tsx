@@ -36,6 +36,7 @@ interface Engine {
   model: Game;
   gen: Generator<SolverEvent, boolean, void>;
   last: SolverEvent | null;
+  ticks: number; // events applied so far — also the flash key, so each attempt re-animates
   done: boolean;
   solved: boolean;
   stats: { placements: number; rejections: number; backtracks: number };
@@ -48,8 +49,9 @@ const SOLVER_LABELS: Record<SolverName, string> = {
   indexed: "Indexed lookup",
 };
 const SOLVER_NAMES = Object.keys(SOLVERS) as SolverName[];
-// Slider 0..100 → delay ms (right = faster). 100 → ~10ms, 0 → ~310ms.
-const delayFor = (speed: number) => 10 + (100 - speed) * 3;
+// Slider 0..100 → delay ms (right = faster). 100 → ~10ms, 0 → ~1210ms (slow
+// enough to watch each try/reject/backtrack).
+const delayFor = (speed: number) => 10 + (100 - speed) * 12;
 
 function SolverScreen({ size }: { size: number }) {
   // The mock owns the puzzle (it needs the answer key); stable across re-runs.
@@ -63,6 +65,7 @@ function SolverScreen({ size }: { size: number }) {
     model: new Game(mock.puzzle),
     gen: mock.run(),
     last: null,
+    ticks: 0,
     done: false,
     solved: false,
     stats: { placements: 0, rejections: 0, backtracks: 0 },
@@ -98,6 +101,7 @@ function SolverScreen({ size }: { size: number }) {
       e.stats.rejections++;
     }
     e.last = ev;
+    e.ticks++;
     bump();
     return true;
   };
@@ -122,7 +126,7 @@ function SolverScreen({ size }: { size: number }) {
   // pulled back out (backtrack) — not once we're solved.
   const flash =
     !e.solved && e.last && e.last.kind !== "place"
-      ? { index: e.last.row * size + e.last.col, kind: e.last.kind, tile: e.last.tile }
+      ? { index: e.last.row * size + e.last.col, kind: e.last.kind, tile: e.last.tile, key: e.ticks }
       : null;
 
   const changeSolver = (next: SolverName) => {
@@ -133,7 +137,7 @@ function SolverScreen({ size }: { size: number }) {
   };
 
   return (
-    <div className="flex w-[min(92vw,24rem)] flex-col items-center gap-5">
+    <div className="flex w-[min(92vw,24rem)] flex-col items-center gap-4">
       <Board size={size} cells={cells} flash={flash} solved={e.solved} />
 
       <div className="flex h-5 items-center">
@@ -151,12 +155,28 @@ function SolverScreen({ size }: { size: number }) {
 
       <Pool size={size} slots={slots} />
 
-      <div className="flex min-h-20 flex-col items-center justify-start gap-3">
-        <div className="flex items-center gap-3">
+      <div className="flex min-h-20 w-full flex-col gap-3">
+        {/* speed — full width and icon-flanked, so it never clips on mobile */}
+        <div className="flex items-center gap-3 text-base text-neutral-500">
+          <span aria-hidden>🐢</span>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={speed}
+            onChange={(ev) => setSpeed(Number(ev.target.value))}
+            aria-label="Solver speed"
+            className="accent-accent h-1.5 flex-1 cursor-pointer"
+          />
+          <span aria-hidden>🐇</span>
+        </div>
+
+        {/* strategy grows to fill; two actions keep a fixed width */}
+        <div className="flex items-center gap-2">
           <select
             value={name}
             onChange={(ev) => changeSolver(ev.target.value as SolverName)}
-            className="btn cursor-pointer"
+            className="btn min-w-0 flex-1 cursor-pointer"
           >
             {SOLVER_NAMES.map((s) => (
               <option key={s} value={s}>
@@ -164,32 +184,16 @@ function SolverScreen({ size }: { size: number }) {
               </option>
             ))}
           </select>
+          <button onClick={step} disabled={running || e.done} className="btn disabled:opacity-40">
+            Step
+          </button>
           <button
             onClick={() => (e.done ? reset() : setRunning((r) => !r))}
             className="btn min-w-20"
           >
             {e.done ? "Restart" : running ? "Pause" : "Solve"}
           </button>
-          <button onClick={step} disabled={running || e.done} className="btn disabled:opacity-40">
-            Step
-          </button>
-          <button onClick={reset} className="btn">
-            Reset
-          </button>
         </div>
-
-        <label className="flex items-center gap-2 text-xs tracking-wider text-neutral-500 uppercase">
-          Slow
-          <input
-            type="range"
-            min={0}
-            max={100}
-            value={speed}
-            onChange={(ev) => setSpeed(Number(ev.target.value))}
-            className="accent-accent w-40"
-          />
-          Fast
-        </label>
       </div>
     </div>
   );

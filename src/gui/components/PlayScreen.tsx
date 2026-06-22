@@ -130,7 +130,7 @@ export function PlayScreen({ newController }: { newController: () => PlayControl
   };
 
   return (
-    <div className="flex w-[min(92vw,24rem)] flex-col items-center gap-5">
+    <div className="flex w-[min(92vw,24rem)] flex-col items-center gap-4">
       <Board
         size={controller.size}
         cells={controller.boardCells()}

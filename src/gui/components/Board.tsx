@@ -22,7 +22,8 @@ export function Board({
   // Solver feedback: a candidate the solver just tried in an (empty) cell. A
   // reject is drawn in place with a red outline then discarded on the next tick;
   // a backtrack shows the tile being pulled back out.
-  flash?: { index: number; kind: "reject" | "backtrack"; tile: TileModel } | null;
+  // `key` changes per attempt so the tryout animation restarts on each one.
+  flash?: { index: number; kind: "reject" | "backtrack"; tile: TileModel; key: number } | null;
   solved?: boolean;
   onTilePointerDown?: (tileId: number, e: PointerEvent) => void;
   onCellHover?: (index: number | null) => void;
@@ -30,8 +31,10 @@ export function Board({
   const glow = solved ? "ring-2 ring-emerald-400/80" : "";
   const attemptClass =
     flash?.kind === "reject"
-      ? "animate-[tryout_240ms_ease-out] opacity-90 ring-2 ring-red-500"
-      : "animate-[tryout_240ms_ease-out] opacity-50 ring-2 ring-amber-400";
+      ? // a wrong candidate: shown, then a "nope" shake; it lingers till the next try
+        "animate-[tryout_240ms_ease-out] opacity-90 ring-2 ring-red-500"
+      : // backtracking: the tile is lifted back out of the cell (no shake)
+        "animate-[pullout_260ms_ease-in_forwards] ring-2 ring-amber-400";
   return (
     <div
       className={`panel grid grid-cols-[repeat(var(--size),var(--tile))] grid-rows-[repeat(var(--size),var(--tile))] ${glow} transition-shadow`}
@@ -51,8 +54,11 @@ export function Board({
               onPointerDown={onTilePointerDown ? (e) => onTilePointerDown(tile.id, e) : undefined}
             />
           ) : (
-            // a tried-and-rejected (or backtracked) candidate, shown then dropped
-            flash?.index === i && <Tile tile={flash.tile} className={attemptClass} />
+            // a tried-and-rejected (or backtracked) candidate, shown then dropped.
+            // keyed by attempt so React remounts it and the shake replays.
+            flash?.index === i && (
+              <Tile key={flash.key} tile={flash.tile} className={attemptClass} />
+            )
           )}
         </div>
       ))}
