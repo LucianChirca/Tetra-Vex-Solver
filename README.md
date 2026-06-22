@@ -54,7 +54,7 @@ The solvers differ in **one thing only**: how hard they prune the set of tiles
 worth trying at each cell. Brute force is impractical on its own — the real
 project is layering optimizations onto the backtracking search.
 
-| Strategy | Added optimization | Effect |
+| Solver | Added optimization | Effect |
 | --- | --- | --- |
 | **brute-force** | none — try every unused tile | baseline, shows the cost of no pruning |
 | **edge-match** | only try tiles whose top/left digits match the placed neighbors (linear scan) | cuts the vast majority of branches |
@@ -110,7 +110,7 @@ the GUI.
 - **MVC** : keep model, GUI, and rules separate.
 - **Generator (`yield`)** : pause the solver mid-search — so you can watch, pause, and tune its speed.
 - **Two views, one model** : the same game, played by a human (`PlayView`) or a robot (`SolverView`) — both drive the model the same way.
-- **Strategy** : swap pruning tricks without rewriting the search.
+- **Template Method** : `base.ts` owns the `solve()`/`step()` traversal skeleton; each solver overrides only the `candidatesFor()` hook to swap pruning tricks without rewriting the search. Locking the fill order (left→right, top→bottom) keeps it simple and easy to watch — heuristic orderings can come later.
 - **Shared rules** : edge-matching lives in one pure module (`game/rules.ts`), used by both the model's `isLegalMove` and the solvers' pruning — the constraint is written once.
 - **Dependency Inversion** : swap solver or view without touching the other.
 - **Composition Root** : one file (`main.ts`) wires it all.
