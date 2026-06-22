@@ -130,7 +130,9 @@ tetra_vex_solver/
 │   ├── main.ts          composition root — constructs + wires model/view/solver
 │   ├── core/            shared types — Tile, Digit, Side, Puzzle (no behavior)
 │   ├── game/            Model — Game (state) + rules.ts (edge rule) + generate()
-│   ├── gui/             View — React playView.tsx/solverView + style.css
+│   ├── gui/             View (React + Tailwind) — style.css palette entry
+│   │   ├── components/  dumb presentational library — Tile, Board, Pool
+│   │   └── views/       PlayView/SolverView — compose components from the model
 │   └── solvers/         service — shared backtracking core + pruning strategies
 └── assets/              screenshots
 ```
