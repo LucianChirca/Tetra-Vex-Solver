@@ -111,6 +111,7 @@ the GUI.
 - **Generator (`yield`)** : pause the solver mid-search — so you can watch, pause, and tune its speed.
 - **Two views, one model** : the same game, played by a human (`PlayView`) or a robot (`SolverView`) — both drive the model the same way.
 - **Strategy** : swap pruning tricks without rewriting the search.
+- **Shared rules** : edge-matching lives in one pure module (`game/rules.ts`), used by both the model's `isLegalMove` and the solvers' pruning — the constraint is written once.
 - **Dependency Inversion** : swap solver or view without touching the other.
 - **Composition Root** : one file (`main.ts`) wires it all.
 - **Pull events** : the solver doesn't know the UI — the UI asks for steps when it wants them.
@@ -127,7 +128,7 @@ tetra_vex_solver/
 ├── src/
 │   ├── main.ts          composition root — constructs + wires model/view/solver
 │   ├── core/            shared types — Tile, Digit, Side, Puzzle (no behavior)
-│   ├── game/            Model — Game (state + rules) + generate()
+│   ├── game/            Model — Game (state) + rules.ts (edge rule) + generate()
 │   ├── gui/             View — App loop, drawTile, playView, solverView
 │   └── solvers/         service — shared backtracking core + pruning strategies
 └── assets/              screenshots
@@ -165,7 +166,7 @@ loud); per-frame view hooks (`update`/`draw`/`handlePointer`) are empty `{}`.
 Suggested order — each step only depends on the ones above it:
 
 1. `core/types.ts` — already done (pure types).
-2. `game/game.ts` — the rules: `isLegalMove`, `place`/`remove`, `isSolved`.
+2. `game/rules.ts` — the shared edge rule (`seamAgrees`), then `game/game.ts`: `isLegalMove`, `place`/`remove`, `isSolved`.
 3. `game/generator.ts` — `generate()` random solvable puzzles.
 4. `solvers/base.ts` — the shared `solve()`/`step()` traversal + events.
 5. one strategy's `candidatesFor` (start with `edgeMatch`).

@@ -23,7 +23,8 @@ export class Game {
     throw new Error("not implemented");
   }
 
-  // Is placing this tile here allowed? (in bounds, empty, edges match neighbors)
+  // Is placing this tile here allowed? In bounds, empty, and for each present
+  // neighbor `seamAgrees(...)` (from ./rules — same check the solvers use).
   isLegalMove(row: number, col: number, tile: Tile): boolean {
     throw new Error("not implemented");
   }
