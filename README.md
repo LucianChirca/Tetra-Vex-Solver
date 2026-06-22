@@ -55,11 +55,11 @@ The solvers differ in **one thing only**: how hard they prune the set of tiles
 worth trying at each cell. Brute force is impractical on its own — the real
 project is layering optimizations onto the backtracking search.
 
-| Solver | Added optimization | Effect |
-| --- | --- | --- |
-| **brute-force** | none — try every unused tile | baseline, shows the cost of no pruning |
-| **edge-match** | only try tiles whose top/left digits match the placed neighbors (linear scan) | cuts the vast majority of branches |
-| **indexed** | same constraint via a `(side, digit) → tiles` map | removes the per-cell scan, instant candidate lookup |
+| Solver          | Added optimization                                                            | Effect                                              |
+| --------------- | ----------------------------------------------------------------------------- | --------------------------------------------------- |
+| **brute-force** | none — try every unused tile                                                  | baseline, shows the cost of no pruning              |
+| **edge-match**  | only try tiles whose top/left digits match the placed neighbors (linear scan) | cuts the vast majority of branches                  |
+| **indexed**     | same constraint via a `(side, digit) → tiles` map                             | removes the per-cell scan, instant candidate lookup |
 
 The point is seeing **why** each refinement shrinks the search tree — watching
 rejected branches vanish in the solver view.
@@ -113,6 +113,7 @@ the GUI.
 - **Two views, one model** : the same game, played by a human (`PlayView`) or a robot (`SolverView`) — both drive the model the same way.
 - **Template Method** : `base.ts` owns the `solve()`/`step()` traversal skeleton; each solver overrides only the `candidatesFor()` hook to swap pruning tricks without rewriting the search. Locking the fill order (left→right, top→bottom) keeps it simple and easy to watch — heuristic orderings can come later.
 - **Shared rules** : edge-matching lives in one pure module (`game/rules.ts`), used by both the model's `isLegalMove` and the solvers' pruning — the constraint is written once.
+- **Presentational components** : `gui/components` (Tile, Board, Pool) render from props only; `gui/views` own state + input and compose them from the model.
 - **Dependency Inversion** : swap solver or view without touching the other.
 - **Composition Root** : one file (`main.ts`) wires it all.
 - **Pull events** : the solver doesn't know the UI — the UI asks for steps when it wants them.
@@ -124,7 +125,7 @@ the GUI.
 ```
 tetra_vex_solver/
 ├── index.html           mounts the app
-├── package.json         scripts + deps (Vite, TypeScript)
+├── package.json         scripts + deps (Vite, React, Tailwind, TypeScript)
 ├── tsconfig.json        strict TypeScript config
 ├── src/
 │   ├── main.ts          composition root — constructs + wires model/view/solver
@@ -154,6 +155,8 @@ Then open the printed URL. Add `?mode=solve` to watch the solver, or
 
 ```bash
 npm run typecheck  # fast compile check — the inner loop while implementing
+npm run lint       # ESLint (TS + React)
+npm run format     # Prettier (sorts Tailwind classes)
 npm run build      # type-check + production build to dist/
 npm run preview    # serve the production build
 ```
@@ -162,9 +165,10 @@ npm run preview    # serve the production build
 
 ## Implementing
 
-Every function body is a stub right now — the scaffold is structure only.
-Convention: value-returning stubs `throw new Error("not implemented")` (fail
-loud); per-frame view hooks (`update`/`draw`/`handlePointer`) are empty `{}`.
+Most logic is a stub right now — the scaffold is structure only. Convention:
+value-returning stubs `throw new Error("not implemented")` (fail loud). The
+views (`mount`/`destroy` + React components) render real markup, but the model
+and solver methods they call are still stubs.
 
 Suggested order — each step only depends on the ones above it:
 
@@ -173,8 +177,8 @@ Suggested order — each step only depends on the ones above it:
 3. `game/generator.ts` — `generate()` random solvable puzzles.
 4. `solvers/base.ts` — the shared `solve()`/`step()` traversal + events.
 5. one strategy's `candidatesFor` (start with `edgeMatch`).
-6. `gui/playView.tsx` — React board + pool + drag-and-drop (`style.css` is ready).
-7. `gui/solverView.ts` — a stepper timer that pulls `SolverEvent`s.
+6. `gui/views/playView.tsx` — wire drag-and-drop onto the component library.
+7. `gui/views/solverView.tsx` — a stepper timer that pulls `SolverEvent`s.
 
 > Tip: while implementing, you can flip `noUnusedLocals`/`noUnusedParameters`
 > back on in `tsconfig.json` once bodies read their fields/params.
@@ -184,27 +188,31 @@ Suggested order — each step only depends on the ones above it:
 ## Roadmap
 
 **Foundations**
-- [ ] `game.generate()` — random *solvable* puzzles (build a valid board, shuffle the pool)
+
+- [ ] `game.generate()` — random _solvable_ puzzles (build a valid board, shuffle the pool)
 - [ ] Shared backtracking core in `base.ts` (row-major fill + `placed[]` + events)
-- [ ] DOM tile rendering + `style.css` (done) — board, pool, tile faces
+- [x] React tile rendering — `components/` (Tile, Board, Pool) + `style.css`
 
 **Views**
+
 - [ ] `PlayView` — drag-and-drop with eased snap + win detection
 - [ ] `SolverView` — animated place / reject / backtrack, with a speed control
 
-**Refining the backtracking solver** *(the core exploration)*
+**Refining the backtracking solver** _(the core exploration)_
+
 - [ ] the three strategies in the table above (`brute-force` → `edge-match` → `indexed`)
 - [ ] most-constrained cell / fewest-candidates ordering
 - [ ] forward-checking — detect a cell with zero candidates early
 - [ ] side-by-side strategy comparison (steps, time, branches pruned)
 
 **Stretch**
+
 - [ ] larger boards (`4×4`, `5×5`)
 
 **Maybe / later**
+
 - [ ] a non-yielding solver variant — the `yield`-per-decision generator is what
       makes the search watchable, but the per-step pause/resume costs speed. A
       separate solver that runs the same search without `yield` would be faster
       when you only want the answer, not the animation.
 - [ ] benchmark yielding vs non-yielding (way later — only once both exist)
-```
