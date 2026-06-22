@@ -114,6 +114,7 @@ the GUI.
 - **Template Method** : `base.ts` owns the `solve()`/`step()` traversal skeleton; each solver overrides only the `candidatesFor()` hook to swap pruning tricks without rewriting the search. Locking the fill order (left→right, top→bottom) keeps it simple and easy to watch — heuristic orderings can come later.
 - **Shared rules** : edge-matching lives in one pure module (`game/rules.ts`), used by both the model's `isLegalMove` and the solvers' pruning — the constraint is written once.
 - **Presentational components** : `gui/components` (Tile, Board, Pool) render from props only; `gui/views` own state + input and compose them from the model.
+- **Controller** : `PlayController` holds the move logic (place / swap / return / recall) as pure methods over the model — drag-mechanism-agnostic, so it's unit-tested without simulating the DOM.
 - **Dependency Inversion** : swap solver or view without touching the other.
 - **Composition Root** : one file (`main.ts`) wires it all.
 - **Pull events** : the solver doesn't know the UI — the UI asks for steps when it wants them.
@@ -130,11 +131,13 @@ tetra_vex_solver/
 ├── src/
 │   ├── main.ts          composition root — constructs + wires model/view/solver
 │   ├── core/            shared types — Tile, Digit, Side, Puzzle (no behavior)
-│   ├── game/            Model — Game (state) + rules.ts (edge rule) + generate()
+│   ├── game/            Model — Game (state + rules) + rules.ts + generate()
 │   ├── gui/             View (React + Tailwind) — style.css palette entry
-│   │   ├── components/  dumb presentational library — Tile, Board, Pool
-│   │   └── views/       PlayView/SolverView — compose components from the model
+│   │   ├── components/  dumb presentational library — Tile, Board, Pool, PlayScreen
+│   │   ├── controllers/ PlayController — move logic (place/swap/recall) + tests
+│   │   └── views/       PlayView/SolverView — View-lifecycle adapters → React
 │   └── solvers/         service — shared backtracking core + pruning strategies
+├── public/              favicon.svg
 └── assets/              screenshots
 ```
 
@@ -155,6 +158,7 @@ Then open the printed URL. Add `?mode=solve` to watch the solver, or
 
 ```bash
 npm run typecheck  # fast compile check — the inner loop while implementing
+npm test           # Vitest (unit tests)
 npm run lint       # ESLint (TS + React)
 npm run format     # Prettier (sorts Tailwind classes)
 npm run build      # type-check + production build to dist/
@@ -165,23 +169,27 @@ npm run preview    # serve the production build
 
 ## Implementing
 
-Most logic is a stub right now — the scaffold is structure only. Convention:
-value-returning stubs `throw new Error("not implemented")` (fail loud). The
-views (`mount`/`destroy` + React components) render real markup, but the model
-and solver methods they call are still stubs.
+The model and the play UI are done; the solver is still a stub. Convention for
+the remaining stubs: value-returning bodies `throw new Error("not implemented")`
+(fail loud).
 
-Suggested order — each step only depends on the ones above it:
+Done:
 
-1. `core/types.ts` — already done (pure types).
-2. `game/rules.ts` — the shared edge rule (`seamAgrees`), then `game/game.ts`: `isLegalMove`, `place`/`remove`, `isSolved`.
-3. `game/generator.ts` — `generate()` random solvable puzzles.
-4. `solvers/base.ts` — the shared `solve()`/`step()` traversal + events.
-5. one strategy's `candidatesFor` (start with `edgeMatch`).
-6. `gui/views/playView.tsx` — wire drag-and-drop onto the component library.
-7. `gui/views/solverView.tsx` — a stepper timer that pulls `SolverEvent`s.
+- `core/types.ts` — pure types.
+- `game/` — `rules.ts` (`seamAgrees`), `Game` (`place`/`remove`/`isLegalMove`/
+  `isSolved`), and a placeholder `generate()` (random tiles, _not solvable yet_).
+- play UI — drag-and-drop / swap / double-click recall, in `PlayController`
+  (`controllers/`, unit-tested) driven from `components/PlayScreen`.
 
-> Tip: while implementing, you can flip `noUnusedLocals`/`noUnusedParameters`
-> back on in `tsconfig.json` once bodies read their fields/params.
+Next:
+
+1. `solvers/base.ts` — the shared `solve()`/`step()` traversal + events.
+2. one strategy's `candidatesFor` (start with `edgeMatch`).
+3. `game/generator.ts` — make `generate()` produce _solvable_ boards.
+4. `gui/views/solverView.tsx` — a stepper timer that pulls `SolverEvent`s.
+
+> Tip: while implementing the solver, you can flip `noUnusedLocals`/
+> `noUnusedParameters` back on in `tsconfig.json` once bodies read their params.
 
 ---
 
@@ -195,7 +203,8 @@ Suggested order — each step only depends on the ones above it:
 
 **Views**
 
-- [ ] `PlayView` — drag-and-drop with eased snap + win detection
+- [x] `PlayView` — pointer drag-and-drop, swap, double-click recall, fixed pool
+- [ ] win detection / celebration
 - [ ] `SolverView` — animated place / reject / backtrack, with a speed control
 
 **Refining the backtracking solver** _(the core exploration)_
