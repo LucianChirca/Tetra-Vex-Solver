@@ -21,6 +21,15 @@ type Drag = {
 type Hover = { kind: "cell"; index: number } | { kind: "pool" } | null;
 type Returning = { tileId: number; from: { x: number; y: number }; to: { x: number; y: number } };
 
+// Screen position of a pool home slot — the slot cell (data-slot) stays in the
+// DOM whether full or empty, so a returned tile can glide back to it.
+function slotRect(tileId: number): { x: number; y: number } | null {
+  const el = document.querySelector(`[data-slot="${tileId}"]`);
+  if (!el) return null;
+  const r = el.getBoundingClientRect();
+  return { x: r.left, y: r.top };
+}
+
 // Composes Board + Pool and owns the human's input: a custom pointer drag (the
 // tile follows the cursor — no native drag image). Board/Pool report hover; on
 // release we resolve against the controller (place / swap / return). A rejected
@@ -58,23 +67,37 @@ export function PlayScreen({ newController }: { newController: () => PlayControl
     if (!drag) return;
     const move = (e: PointerEvent) =>
       setDrag((d) => (d ? { ...d, x: e.clientX, y: e.clientY } : d));
-    const finish = (placedOnCell: boolean) => {
-      if (!placedOnCell) controller.returnToPool(drag.tileId);
-      // A rejected drag from the pool glides back to its slot.
-      if (!placedOnCell && drag.fromPool) {
-        setReturning({
-          tileId: drag.tileId,
-          from: { x: drag.x - drag.offX, y: drag.y - drag.offY },
-          to: { x: drag.homeX, y: drag.homeY },
-        });
+    const settle = () => {
+      // A tap (no real movement) on a placed tile sends it home to the pool.
+      const moved =
+        Math.hypot(drag.x - (drag.homeX + drag.offX), drag.y - (drag.homeY + drag.offY)) > 6;
+
+      // A real drag onto a legal cell commits — nothing to animate.
+      if (moved && hover?.kind === "cell" && controller.placeOnCell(drag.tileId, hover.index)) {
+        setDrag(null);
+        setHover(null);
+        rerender();
+        return;
       }
+
+      // Otherwise the tile glides back to where it belongs:
+      //  - to its pool slot if it's a pool tile, was dropped on the pool, or was
+      //    a tap on a placed tile ("send home");
+      //  - back to its original board cell if a board tile's move was rejected.
+      const toPool = !moved || drag.fromPool || hover?.kind === "pool";
+      if (toPool) controller.returnToPool(drag.tileId);
+      const slot = toPool ? slotRect(drag.tileId) : null;
+      setReturning({
+        tileId: drag.tileId,
+        from: { x: drag.x - drag.offX, y: drag.y - drag.offY },
+        to: slot ?? { x: drag.homeX, y: drag.homeY },
+      });
       setDrag(null);
       setHover(null);
       rerender();
     };
-    const drop = () =>
-      finish(hover?.kind === "cell" && controller.placeOnCell(drag.tileId, hover.index));
-    const cancel = () => finish(false);
+    const drop = () => settle();
+    const cancel = () => settle();
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", drop);
     window.addEventListener("pointercancel", cancel);
@@ -108,10 +131,8 @@ export function PlayScreen({ newController }: { newController: () => PlayControl
 
   return (
     <div className="flex w-[min(92vw,24rem)] flex-col items-center gap-5">
-      <h1 className="text-3xl font-bold tracking-tight text-neutral-100">TetraVex</h1>
-
       <Board
-        n={controller.n}
+        size={controller.size}
         cells={controller.boardCells()}
         draggingId={inFlightId}
         hoverIndex={hoverIndex}
@@ -134,20 +155,24 @@ export function PlayScreen({ newController }: { newController: () => PlayControl
       </div>
 
       <Pool
-        n={controller.n}
+        size={controller.size}
         slots={controller.poolSlots()}
         draggingId={inFlightId}
         onTilePointerDown={startDrag}
         onHoverChange={(over) => setHover(over ? { kind: "pool" } : null)}
       />
 
-      <div className="mt-1 flex gap-3">
-        <button onClick={newBoard} className="btn">
-          New
-        </button>
-        <button onClick={reset} className="btn">
-          Reset
-        </button>
+      {/* fixed-height footer so Play and Solve occupy the same space — toggling
+          modes swaps the content without shifting the chrome above */}
+      <div className="flex min-h-20 flex-col items-center justify-start">
+        <div className="flex gap-3">
+          <button onClick={newBoard} className="btn">
+            New
+          </button>
+          <button onClick={reset} className="btn">
+            Reset
+          </button>
+        </div>
       </div>
 
       {drag && dragTile && (
