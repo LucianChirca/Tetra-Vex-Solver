@@ -137,7 +137,7 @@ function SolverScreen({ size }: { size: number }) {
   };
 
   return (
-    <div className="flex w-[min(92vw,24rem)] flex-col items-center gap-5">
+    <div className="flex w-[min(92vw,24rem)] flex-col items-center gap-3">
       <Board size={size} cells={cells} flash={flash} solved={e.solved} />
 
       <div className="flex h-5 items-center">

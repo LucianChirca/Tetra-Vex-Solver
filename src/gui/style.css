@@ -26,12 +26,12 @@ body {
   /* Tile size — the board+pool fill whatever the fixed header/footer leave,
      bounded by whichever runs out first:
        - width:  3 tiles fit the panel (min(92vw, 24rem) wide), or
-       - height: 6 tile-rows fit the space after ~20rem of chrome,
-     capped at 6.5rem so it isn't huge on a big monitor. */
+       - height: 6 tile-rows fit the space after ~17rem of chrome,
+     capped at 7rem so it isn't huge on a big monitor. */
   --tile: min(
     calc((min(92vw, 24rem) - 1.5rem) / 3),
-    calc((100dvh - 20rem) / 6),
-    6.5rem
+    calc((100dvh - 17rem) / 6),
+    7rem
   );
 
   /* Digit palette — read in TS via var(--color-digit-N). Plain custom props,
