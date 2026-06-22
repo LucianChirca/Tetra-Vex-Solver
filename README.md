@@ -150,11 +150,12 @@ git clone https://github.com/LucianChirca/Tetra-Vex-Solver.git
 cd Tetra-Vex-Solver
 npm install
 
-npm run dev        # local dev server with hot reload
+npm run dev        # local dev server with hot reload (also on your LAN IP)
 ```
 
-Then open the printed URL. Add `?mode=solve` to watch the solver, or
-`?solver=edge-match` to pick a strategy.
+Then open the printed URL. The dev/preview servers listen on `0.0.0.0`, so the
+printed Network URL works from a phone on the same Wi-Fi. Add `?mode=solve` to
+watch the solver, or `?solver=edge-match` to pick a strategy.
 
 ```bash
 npm run typecheck  # fast compile check — the inner loop while implementing
@@ -176,17 +177,17 @@ the remaining stubs: value-returning bodies `throw new Error("not implemented")`
 Done:
 
 - `core/types.ts` — pure types.
-- `game/` — `rules.ts` (`seamAgrees`), `Game` (`place`/`remove`/`isLegalMove`/
-  `isSolved`), and a placeholder `generate()` (random tiles, _not solvable yet_).
-- play UI — drag-and-drop / swap / double-click recall, in `PlayController`
-  (`controllers/`, unit-tested) driven from `components/PlayScreen`.
+- `game/` — `rules.ts` (`seamAgrees`), `Game` (`place`/`remove`/`isLegalMove`
+  enforcing edge matches / `isSolved`), and a solvable `generate()`.
+- play UI — pointer drag-and-drop, swap, return-to-pool, win detection, reset /
+  new board, in `PlayController` (`controllers/`, unit-tested) driven from
+  `components/PlayScreen`.
 
-Next:
+Next (the solver):
 
 1. `solvers/base.ts` — the shared `solve()`/`step()` traversal + events.
 2. one strategy's `candidatesFor` (start with `edgeMatch`).
-3. `game/generator.ts` — make `generate()` produce _solvable_ boards.
-4. `gui/views/solverView.tsx` — a stepper timer that pulls `SolverEvent`s.
+3. `gui/views/solverView.tsx` — a stepper timer that pulls `SolverEvent`s.
 
 > Tip: while implementing the solver, you can flip `noUnusedLocals`/
 > `noUnusedParameters` back on in `tsconfig.json` once bodies read their params.
@@ -197,14 +198,14 @@ Next:
 
 **Foundations**
 
-- [ ] `game.generate()` — random _solvable_ puzzles (build a valid board, shuffle the pool)
+- [x] `game.generate()` — random _solvable_ puzzles (build a valid board, shuffle the pool)
 - [ ] Shared backtracking core in `base.ts` (row-major fill + `placed[]` + events)
 - [x] React tile rendering — `components/` (Tile, Board, Pool) + `style.css`
 
 **Views**
 
-- [x] `PlayView` — pointer drag-and-drop, swap, double-click recall, fixed pool
-- [ ] win detection / celebration
+- [x] `PlayView` — pointer drag-and-drop, swap, fixed pool, reset / new board
+- [x] win detection (structural) + SOLVED banner
 - [ ] `SolverView` — animated place / reject / backtrack, with a speed control
 
 **Refining the backtracking solver** _(the core exploration)_
