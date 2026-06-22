@@ -4,12 +4,14 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover"
     />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <title>TetraVex Solver</title>
   </head>
-  <body class="bg-bg m-0 flex min-h-screen items-center justify-center p-4 font-sans text-white">
+  <body
+    class="bg-bg m-0 flex min-h-dvh items-center justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] font-sans text-white"
+  >
     <!-- App mounts here. Mode (play | solve) chosen via the ?mode= query. -->
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>

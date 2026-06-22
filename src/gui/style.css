@@ -5,7 +5,9 @@
    cancelled mid-drag, stranding the floating tile). */
 html,
 body {
-  height: 100%;
+  /* dvh, not vh/100%: the locked surface must match the *visible* viewport so
+     mobile-Safari's floating address bar doesn't overlay the footer. */
+  height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
   touch-action: none;
