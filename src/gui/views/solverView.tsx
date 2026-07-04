@@ -8,18 +8,22 @@ import type { View } from "./view";
 import { Game, generate } from "../../game";
 import type { Tile } from "../../core";
 import { SOLVERS, type SolverEvent, type SolverName } from "../../solvers";
-import { Board, Pool } from "../components";
+import { Board, Pool, StatsDialog } from "../components";
+import { fmtDuration } from "../format";
 
 // Hosts SolverScreen, which animates a solver's SolverEvent stream onto its own
 // model. The solver clock (play/pause/step/speed) lives in the component.
 export class SolverView implements View {
   private root: Root | null = null;
 
-  constructor(private readonly size: number) {}
+  constructor(
+    private readonly size: number,
+    private readonly onBack: () => void,
+  ) {}
 
   mount(parent: HTMLElement): void {
     this.root = createRoot(parent);
-    this.root.render(<SolverScreen size={this.size} />);
+    this.root.render(<SolverScreen size={this.size} onBack={this.onBack} />);
   }
 
   destroy(): void {
@@ -40,6 +44,9 @@ interface Engine {
   done: boolean;
   solved: boolean;
   stats: { placements: number; rejections: number; backtracks: number };
+  depth: number; // tiles currently on the board
+  startedAt: number | null; // performance.now() at the first event
+  elapsedMs: number; // wall time first event → finish (pauses included)
 }
 
 // Human-friendly labels for the dropdown (registry keys stay machine-ish).
@@ -50,16 +57,17 @@ const SOLVER_LABELS: Record<SolverName, string> = {
 };
 // Only implemented solvers; re-add as they land.
 const SOLVER_NAMES: SolverName[] = ["brute-force" /* , "edge-match", "indexed" */];
-// Slider 0..100 → delay ms (right = faster). 100 → ~10ms, 0 → ~1210ms (slow
-// enough to watch each try/reject/backtrack).
-const delayFor = (speed: number) => 10 + (100 - speed) * 12;
+// Slider 0..100 → delay ms (right = faster). Linear in events/sec (0.5..25.5),
+// so each notch adds the same speed. 0 → 2000ms, 50 → ~77ms, 100 → ~39ms.
+const delayFor = (speed: number) => 1000 / (0.5 + speed / 4);
 
-function SolverScreen({ size }: { size: number }) {
+function SolverScreen({ size, onBack }: { size: number; onBack: () => void }) {
   // One puzzle per size; stable across re-runs so solvers can be compared.
   const puzzle = useMemo(() => generate(size), [size]);
   const [name, setName] = useState<SolverName>("brute-force");
   const [speed, setSpeed] = useState(70);
   const [running, setRunning] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false); // final-stats modal, opened on solve
   const [, bump] = useReducer((v) => v + 1, 0);
 
   const fresh = (solverName: SolverName = name): Engine => ({
@@ -71,12 +79,16 @@ function SolverScreen({ size }: { size: number }) {
     done: false,
     solved: false,
     stats: { placements: 0, rejections: 0, backtracks: 0 },
+    depth: 0,
+    startedAt: null,
+    elapsedMs: 0,
   });
   const eng = useRef<Engine>(fresh());
 
   const reset = () => {
     eng.current = fresh();
     setRunning(false);
+    setStatsOpen(false);
     bump();
   };
 
@@ -84,11 +96,14 @@ function SolverScreen({ size }: { size: number }) {
   const step = (): boolean => {
     const e = eng.current;
     if (e.done) return false;
+    e.startedAt ??= performance.now();
     const r = e.gen.next();
     if (r.done) {
       e.done = true;
       e.solved = r.value === true;
+      e.elapsedMs = performance.now() - e.startedAt;
       setRunning(false);
+      if (e.solved) setStatsOpen(true);
       bump();
       return false;
     }
@@ -99,9 +114,11 @@ function SolverScreen({ size }: { size: number }) {
       e.model.place(ev.row, ev.col, ev.tile);
       e.stats.placements++;
       e.candidateIds.delete(ev.tile.id);
+      e.depth++;
     } else if (ev.kind === "backtrack") {
       e.model.remove(ev.row, ev.col);
       e.stats.backtracks++;
+      e.depth--;
     } else {
       e.stats.rejections++;
       e.candidateIds.delete(ev.tile.id);
@@ -132,34 +149,67 @@ function SolverScreen({ size }: { size: number }) {
   // pulled back out (backtrack) — not once we're solved.
   const flash =
     !e.solved && e.last && (e.last.kind === "reject" || e.last.kind === "backtrack")
-      ? { index: e.last.row * size + e.last.col, kind: e.last.kind, tile: e.last.tile, key: e.ticks }
+      ? {
+          index: e.last.row * size + e.last.col,
+          kind: e.last.kind,
+          tile: e.last.tile,
+          key: e.ticks,
+        }
       : null;
 
   const changeSolver = (next: SolverName) => {
     setName(next);
     eng.current = fresh(next);
     setRunning(false);
+    setStatsOpen(false);
     bump();
   };
 
   return (
-    <div className="flex w-[min(92vw,24rem)] flex-col items-center gap-3">
-      <Board size={size} cells={cells} flash={flash} solved={e.solved} />
-
-      <div className="flex h-5 items-center">
-        {e.solved ? (
-          <span className="animate-pulse text-sm font-bold tracking-[0.3em] text-emerald-400">
-            SOLVED 🎉
-          </span>
-        ) : (
-          <span className="font-mono text-xs tracking-wider text-neutral-500">
-            {e.stats.placements} placed · {e.stats.rejections} rejected · {e.stats.backtracks}{" "}
-            backtracked
-          </span>
-        )}
+    <div className="flex h-[calc(100dvh-2rem)] w-[min(92vw,24rem)] flex-col items-center gap-3">
+      {/* fixed top bar: costs the game no vertical space */}
+      <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] left-[max(0.75rem,env(safe-area-inset-left))] z-40">
+        <button onClick={onBack} className="btn-round" aria-label="Back to menu">
+          ←
+        </button>
       </div>
 
-      <Pool size={size} slots={slots} highlightIds={e.done ? undefined : e.candidateIds} />
+      {/* the game centers in the measured space the footer leaves over */}
+      <div className="game-area w-full flex-1">
+        <div className="game-inner flex h-full w-full flex-col items-center justify-center gap-3">
+          <Board size={size} cells={cells} flash={flash} solved={e.solved} />
+
+          {/* width matches the board/pool panels so the button aligns with their right edge */}
+          <div
+            className="relative flex h-5 items-center justify-center"
+            style={{ width: `calc(var(--tile) * ${size} + var(--gap) * ${size + 1})` }}
+          >
+            {e.solved && (
+              <button
+                onClick={() => setStatsOpen(true)}
+                className="btn absolute right-0 px-2 py-0.5 text-xs"
+              >
+                Stats
+              </button>
+            )}
+            {e.solved ? (
+              <span className="animate-pulse text-sm font-bold tracking-[0.3em] text-emerald-400">
+                SOLVED 🎉
+              </span>
+            ) : (
+              <span
+                title="placed · rejected · backtracked · depth/board"
+                className="font-mono text-xs tracking-wider whitespace-nowrap text-neutral-500"
+              >
+                {e.stats.placements} placed · {e.stats.rejections} rej · {e.stats.backtracks} back ·
+                depth {e.depth}/{size * size}
+              </span>
+            )}
+          </div>
+
+          <Pool size={size} slots={slots} highlightIds={e.done ? undefined : e.candidateIds} />
+        </div>
+      </div>
 
       {/* compact footer: one row of controls + a thin speed slider underneath */}
       <div className="flex min-h-16 w-full flex-col justify-center gap-2">
@@ -201,6 +251,18 @@ function SolverScreen({ size }: { size: number }) {
           <span aria-hidden>🐇</span>
         </div>
       </div>
+
+      <StatsDialog
+        open={statsOpen}
+        onClose={() => setStatsOpen(false)}
+        rows={[
+          ["Placed", e.stats.placements],
+          ["Rejected", e.stats.rejections],
+          ["Backtracked", e.stats.backtracks],
+          ["Total moves", e.stats.placements + e.stats.rejections + e.stats.backtracks],
+          ["Time", fmtDuration(e.elapsedMs)],
+        ]}
+      />
     </div>
   );
 }
