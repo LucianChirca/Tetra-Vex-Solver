@@ -1,14 +1,13 @@
 <h1 align="center">🧩 TetraVex Solver</h1>
 
 <p align="center">
-  <em>Play the TetraVex edge-matching puzzle — and watch a backtracking solver crack it, one decision at a time.</em>
+  <em>Play the TetraVex edge-matching puzzle — and watch backtracking solvers crack it, one decision at a time.</em>
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5">
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" alt="React 19">
   <img src="https://img.shields.io/badge/Vite-8-646CFF?logo=vite&logoColor=white" alt="Vite 8">
-  <img src="https://img.shields.io/badge/status-WIP-orange" alt="Status: WIP">
 </p>
 
 ---
@@ -24,9 +23,13 @@ same digit** — every internal seam must agree.
 > position changes.
 
 <p align="center">
-  <img src="assets/tetravex-app.png" alt="The original TetraVex puzzle (Game Nest app)" width="320">
-  <br>
-  <sub>The puzzle that started it — a 3×3 board with its tile pool (Game Nest app).</sub>
+  <img src="assets/menu.png" alt="Landing menu — board size and mode" width="200">
+  <img src="assets/play.png" alt="Play mode — drag tiles from the pool" width="200">
+  <img src="assets/solver.png" alt="Solver mode — live placements, rejections and candidate highlighting" width="200">
+  <img src="assets/stats.png" alt="End-of-run stats" width="200">
+</p>
+<p align="center">
+  <sub>Menu (3×3–5×5, play or solve) · play mode · solver mid-run (ringed pool tiles = current candidates) · final stats.</sub>
 </p>
 
 ---
@@ -34,32 +37,45 @@ same digit** — every internal seam must agree.
 ## Why this project
 
 A learning playground for **search and constraint satisfaction**, runnable in
-the browser so it's one link to share:
+the browser so it's one link to share. The goal is to keep exploring **more
+kinds of solvers** — different pruning, different orderings, different search
+shapes — and to add **benchmarking and side-by-side comparisons** between them.
 
-- **Play it** — interactive board, drag tiles from the pool, smooth snap.
-- **Watch it solve** — a view renders the solver's every move: placements,
-  rejections, and backtracks, live.
-- **Compare strategies** — the same backtracking core, with progressively more
-  pruning, swappable via `?solver=`.
+- **Play it** — interactive board, drag tiles from the pool, smooth snap, a
+  timer, and your stats when you win.
+- **Watch it solve** — the solver view renders every move live: placements,
+  rejections, backtracks, and which pool tiles are candidates for the current
+  cell (ringed). Pause, single-step, or crank the speed slider to the literal
+  max.
+- **Compare strategies** — the same event stream, progressively smarter
+  searches, one dropdown apart. Stats (placed / rejected / backtracked / time)
+  make the difference concrete.
 
 ---
 
-## How it works
+## The solvers
 
-**One shared algorithm for every solver:** depth-first search that fills the
-grid in a fixed order — start top-left, go left→right, wrap to the next row,
-top→bottom. Place a tile, recurse; on a dead end, remove it and try the next.
-A `placed[]` array tracks which tiles are in use so backtracking is clean.
+Every solver extends one generic `BacktrackingSolver` (model, bookkeeping,
+stats, `solve(): Generator<SolverEvent>`), so the GUI can replay any of them.
+Two families so far:
 
-The solvers differ in **one thing only**: how hard they prune the set of tiles
-worth trying at each cell. Brute force is impractical on its own — the real
-project is layering optimizations onto the backtracking search.
+**Row-major** (`solvers/rowMajor/`) — fixed fill order: left→right, top→bottom.
+One shared recursion (`RowMajorSolver.step()`); each strategy overrides only
+`candidatesFor(row, col)`:
 
-| Solver          | Added optimization                                                            | Effect                                              |
-| --------------- | ----------------------------------------------------------------------------- | --------------------------------------------------- |
-| **brute-force** | none — try every unused tile                                                  | baseline, shows the cost of no pruning              |
-| **edge-match**  | only try tiles whose top/left digits match the placed neighbors (linear scan) | cuts the vast majority of branches                  |
-| **indexed**     | same constraint via a `(side, digit) → tiles` map                             | removes the per-cell scan, instant candidate lookup |
+| Solver           | Added optimization                                                                               | Effect                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| **brute-force**  | none — try every unused tile                                                                      | baseline, shows the cost of no pruning           |
+| **edge-match**   | only tiles whose edges match the placed neighbors (linear scan)                                   | cuts the vast majority of branches               |
+| **border-first** | unpaired-edge analysis: a side no other tile can pair with must face the border — prune + prefer  | kills doomed subtrees before entering them       |
+| **optimized**    | `(top,left)-digit → tiles` maps + border-first pruning                                            | O(matches) candidate lookup, zero reject events  |
+| **indexed**      | `(side, digit) → tiles` map (stub — the plain lookup step)                                        | not yet implemented                              |
+
+**Tile-driven** (`solvers/mrv/`) — no fixed fill order:
+
+| Solver            | Idea                                                                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| **scarcest-tile** | each step places the unplaced tile with the _fewest possible cells_ (fail-first); a tile with zero homes anywhere aborts the branch immediately |
 
 The point is seeing **why** each refinement shrinks the search tree — watching
 rejected branches vanish in the solver view.
@@ -77,13 +93,13 @@ flowchart TD
     main([main.ts — composition root])
 
     subgraph GUI["gui/ — View (dumb)"]
-        views[Play / Solver views — React]
+        views[Menu / Play / Solver views — React]
     end
     subgraph GAME["game/ — Model"]
         model[Game: state + rules + generate]
     end
     subgraph SOLVERS["solvers/ — service"]
-        solver[BacktrackingSolver + strategies]
+        solver[BacktrackingSolver + families]
     end
     subgraph CORE["core/ — shared types (depends on nothing)"]
         types[Tile / Digit / Side / Puzzle]
@@ -109,15 +125,15 @@ the GUI.
 
 - **Layered architecture** : `core` ← `game` ← `gui`/`solvers` ← `main` — dependencies only point inward.
 - **MVC** : keep model, GUI, and rules separate.
-- **Generator (`yield`)** : pause the solver mid-search — so you can watch, pause, and tune its speed.
+- **Generator (`yield`)** : pause the solver mid-search — so you can watch, pause, single-step, and tune its speed.
 - **Two views, one model** : the same game, played by a human (`PlayView`) or a robot (`SolverView`) — both drive the model the same way.
-- **Template Method** : `base.ts` owns the `solve()`/`step()` traversal skeleton; each solver overrides only the `candidatesFor()` hook to swap pruning tricks without rewriting the search. Locking the fill order (left→right, top→bottom) keeps it simple and easy to watch — heuristic orderings can come later.
-- **Shared rules** : edge-matching lives in one pure module (`game/rules.ts`), used by both the model's `isLegalMove` and the solvers' pruning — the constraint is written once.
-- **Presentational components** : `gui/components` (Tile, Board, Pool) render from props only; `gui/views` own state + input and compose them from the model.
+- **Template Method** : the generic `BacktrackingSolver` owns the plumbing; `RowMajorSolver` owns the row-major `step()` skeleton and strategies override only `candidatesFor()`. Families with a different search shape (like `scarcest-tile`) implement `solve()` themselves.
+- **Shared rules** : edge-matching lives in one pure module (`game/rules.ts`), used by the model's `isLegalMove` and the solvers' pruning — the constraint is written once. Same for the unpaired-edge analysis (`forcedSides`), shared by two solvers.
+- **Presentational components** : `gui/components` (Tile, Board, Pool, StatusRow, StatsDialog) render from props only; `gui/views` own state + input and compose them from the model.
 - **Controller** : `PlayController` holds the move logic (place / swap / return / recall) as pure methods over the model — drag-mechanism-agnostic, so it's unit-tested without simulating the DOM.
-- **Dependency Inversion** : swap solver or view without touching the other.
-- **Composition Root** : one file (`main.ts`) wires it all.
+- **Composition Root** : one file (`main.ts`) wires it all; `App` owns the menu → view lifecycle.
 - **Pull events** : the solver doesn't know the UI — the UI asks for steps when it wants them.
+- **Container-driven sizing** : the board measures the space actually left by the chrome (CSS container queries); every geometry value derives from one `--tile` variable, all in rem.
 
 ---
 
@@ -127,16 +143,17 @@ the GUI.
 tetra_vex_solver/
 ├── index.html           mounts the app
 ├── package.json         scripts + deps (Vite, React, Tailwind, TypeScript)
-├── tsconfig.json        strict TypeScript config
 ├── src/
-│   ├── main.ts          composition root — constructs + wires model/view/solver
+│   ├── main.ts          composition root
 │   ├── core/            shared types — Tile, Digit, Side, Puzzle (no behavior)
 │   ├── game/            Model — Game (state + rules) + rules.ts + generate()
-│   ├── gui/             View (React + Tailwind) — style.css palette entry
-│   │   ├── components/  dumb presentational library — Tile, Board, Pool, PlayScreen
+│   ├── gui/             View (React + Tailwind)
+│   │   ├── components/  presentational — Tile, Board, Pool, PlayScreen, StatusRow, StatsDialog
 │   │   ├── controllers/ PlayController — move logic (place/swap/recall) + tests
-│   │   └── views/       PlayView/SolverView — View-lifecycle adapters → React
-│   └── solvers/         service — shared backtracking core + pruning strategies
+│   │   └── views/       PlayView / SolverView — View-lifecycle adapters → React
+│   └── solvers/         BacktrackingSolver base + events + tests
+│       ├── rowMajor/    fixed-order family — bruteForce, edgeMatch, borderFirst, optimized
+│       └── mrv/         tile-driven family — scarcestTile
 ├── public/              favicon.svg
 └── assets/              screenshots
 ```
@@ -153,12 +170,12 @@ npm install
 npm run dev        # local dev server with hot reload (also on your LAN IP)
 ```
 
-Then open the printed URL. The dev/preview servers listen on `0.0.0.0`, so the
-printed Network URL works from a phone on the same Wi-Fi. Add `?mode=solve` to
-watch the solver, or `?solver=edge-match` to pick a strategy.
+Then open the printed URL — the dev/preview servers listen on `0.0.0.0`, so the
+Network URL works from a phone on the same Wi-Fi. Pick a board size (3×3, 4×4,
+5×5) and **Play** or **Solve** from the in-app menu.
 
 ```bash
-npm run typecheck  # fast compile check — the inner loop while implementing
+npm run typecheck  # fast compile check
 npm test           # Vitest (unit tests)
 npm run lint       # ESLint (TS + React)
 npm run format     # Prettier (sorts Tailwind classes)
@@ -168,61 +185,31 @@ npm run preview    # serve the production build
 
 ---
 
-## Implementing
-
-The model and the play UI are done; the solver is still a stub. Convention for
-the remaining stubs: value-returning bodies `throw new Error("not implemented")`
-(fail loud).
+## Progress
 
 Done:
 
-- `core/types.ts` — pure types.
-- `game/` — `rules.ts` (`seamAgrees`), `Game` (`place`/`remove`/`isLegalMove`
-  enforcing edge matches / `isSolved`), and a solvable `generate()`.
-- play UI — pointer drag-and-drop, swap, return-to-pool, win detection, reset /
-  new board, in `PlayController` (`controllers/`, unit-tested) driven from
-  `components/PlayScreen`.
-
-Next (the solver):
-
-1. `solvers/base.ts` — the shared `solve()`/`step()` traversal + events.
-2. one strategy's `candidatesFor` (start with `edgeMatch`).
-3. `gui/views/solverView.tsx` — a stepper timer that pulls `SolverEvent`s.
-
-> Tip: while implementing the solver, you can flip `noUnusedLocals`/
-> `noUnusedParameters` back on in `tsconfig.json` once bodies read their params.
-
----
+- `core/` + `game/` — types, edge rules, `Game`, solvable `generate()` for any size.
+- Play mode — pointer drag-and-drop, swap, return-to-pool, win detection, timer,
+  reset / new board, end-of-run stats.
+- Solver mode — animated place / reject / backtrack, live candidate
+  highlighting in the pool, pause / step / speed slider, stats modal.
+- Five solvers: `brute-force`, `edge-match`, `border-first`, `optimized`
+  (row-major) and `scarcest-tile` (tile-driven).
+- Landing menu with board sizes 3×3 / 4×4 / 5×5.
 
 ## Roadmap
 
-**Foundations**
+**More kinds of solvers** _(the core exploration)_
 
-- [x] `game.generate()` — random _solvable_ puzzles (build a valid board, shuffle the pool)
-- [ ] Shared backtracking core in `base.ts` (row-major fill + `placed[]` + events)
-- [x] React tile rendering — `components/` (Tile, Board, Pool) + `style.css`
+- [ ] `indexed` — the plain `(side, digit) → tiles` lookup step between edge-match and optimized
+- [ ] forward-checking / constraint propagation variants
+- [ ] other fill orders (spiral, border ring first)
 
-**Views**
+**Benchmarking & comparison**
 
-- [x] `PlayView` — pointer drag-and-drop, swap, fixed pool, reset / new board
-- [x] win detection (structural) + SOLVED banner
-- [ ] `SolverView` — animated place / reject / backtrack, with a speed control
-
-**Refining the backtracking solver** _(the core exploration)_
-
-- [ ] the three strategies in the table above (`brute-force` → `edge-match` → `indexed`)
-- [ ] most-constrained cell / fewest-candidates ordering
-- [ ] forward-checking — detect a cell with zero candidates early
 - [ ] side-by-side strategy comparison (steps, time, branches pruned)
-
-**Stretch**
-
-- [ ] larger boards (`4×4`, `5×5`)
-
-**Maybe / later**
-
-- [ ] a non-yielding solver variant — the `yield`-per-decision generator is what
-      makes the search watchable, but the per-step pause/resume costs speed. A
-      separate solver that runs the same search without `yield` would be faster
-      when you only want the answer, not the animation.
-- [ ] benchmark yielding vs non-yielding (way later — only once both exist)
+- [ ] a non-yielding solver variant — the `yield`-per-decision generator makes
+      the search watchable but costs speed; a silent runner would give honest
+      timings
+- [ ] benchmark harness: same boards, every solver, one table
