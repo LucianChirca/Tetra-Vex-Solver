@@ -54,10 +54,19 @@ const SOLVER_LABELS: Record<SolverName, string> = {
   "brute-force": "Brute force",
   "edge-match": "Edge matching",
   "border-first": "Border first",
+  optimized: "Optimized",
+  "most-constrained": "Most constrained",
   indexed: "Indexed lookup",
 };
 // Only implemented solvers; re-add as they land.
-const SOLVER_NAMES: SolverName[] = ["brute-force", "edge-match", "border-first" /* , "indexed" */];
+const SOLVER_NAMES: SolverName[] = [
+  "brute-force",
+  "edge-match",
+  "border-first",
+  "optimized",
+  "most-constrained",
+  // "indexed",
+];
 // Slider 0..100 → delay ms (right = faster). Linear in events/sec (0.5..25.5),
 // so each notch adds the same speed. 0 → 2000ms, 50 → ~77ms, 100 → ~39ms.
 const delayFor = (speed: number) => 1000 / (0.5 + speed / 4);
