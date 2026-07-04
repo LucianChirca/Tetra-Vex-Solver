@@ -24,7 +24,7 @@ export function Pool({
 }) {
   return (
     <div
-      className="panel grid grid-cols-[repeat(var(--size),var(--tile))] auto-rows-[var(--tile)]"
+      className="panel panel-grid grid auto-rows-[var(--tile)] grid-cols-[repeat(var(--size),var(--tile))]"
       style={{ "--size": size } as CSSProperties}
       onPointerEnter={() => onHoverChange?.(true)}
       onPointerLeave={() => onHoverChange?.(false)}

@@ -29,23 +29,41 @@ body {
   container-type: size;
 }
 .game-inner {
-  /* Tile size — board + status row + pool fill the container, bounded by
-     whichever runs out first (width, height, or the 7rem big-screen cap).
-     --n = board size, set on <html> by App.
-     Gaps/padding are proportional to the tile (--gap = 5.5% of it, ≈0.375rem
-     on a 3×3) so small tiles get tighter spacing. Each panel spans
-     n·tile + (n+1)·gap + 2px border; the height term also subtracts the
-     status row (1.25rem) and the two column gaps (1.5rem). The formulas solve
-     those for tile, avoiding a --tile ↔ --gap cycle. */
+  /* One proportional system, all rem — no device pixels anywhere.
+     --n = board size, set by each screen on its root element.
+     --tile is bounded by whichever runs out first: container width, container
+     height, or the 7rem big-screen cap. Everything else derives from it:
+     --gap (panel gaps + padding) is 5.5% of the tile, so small tiles get
+     tighter spacing. The vars below are the single owners of the geometry the
+     formula subtracts — .status-row/.panel-w/.panel read the same vars, so
+     the two sides of the equation can't drift apart. Each panel spans
+     n·tile + (n+1)·gap + 2·border; the height term also subtracts the status
+     row and the two column gaps. The formulas solve for tile algebraically,
+     avoiding a --tile ↔ --gap cycle. */
+  --status-h: 1.25rem;
+  --col-gap: 0.75rem;
   --tile: min(
-    calc((100cqw - 2px) / (var(--n, 3) + 0.055 * (var(--n, 3) + 1))),
-    calc((100cqh - 2.75rem - 4px) / (2 * var(--n, 3) + 0.11 * (var(--n, 3) + 1))),
+    calc((100cqw - 2 * var(--border)) / (var(--n, 3) + 0.055 * (var(--n, 3) + 1))),
+    calc(
+      (100cqh - var(--status-h) - 2 * var(--col-gap) - 4 * var(--border)) /
+        (2 * var(--n, 3) + 0.11 * (var(--n, 3) + 1))
+    ),
     7rem
   );
   --gap: calc(var(--tile) * 0.055);
+  gap: var(--col-gap);
+}
+/* geometry shared between the sizing formula above and the markup */
+.status-row {
+  height: var(--status-h);
+}
+.panel-w {
+  width: calc(var(--tile) * var(--n, 3) + var(--gap) * (var(--n, 3) + 1));
 }
 
 :root {
+  --border: 0.0625rem; /* panel border width — rem so it scales with the root font */
+
   /* Digit palette — read in TS via var(--color-digit-N). Plain custom props,
      not @theme: nothing references them as a utility, and Tailwind prunes
      unused @theme vars. Sampled from assets/tetravex-app.png. */
@@ -62,10 +80,16 @@ body {
 }
 
 /* --- reusable pieces --- */
+/* .panel = chrome only (border/background); .panel-grid adds the
+   tile-proportional spacing and only means something inside .game-inner. */
 .panel {
-  @apply border-panel-border bg-panel rounded-lg border;
-  gap: var(--gap, 0.375rem);
-  padding: var(--gap, 0.375rem);
+  @apply border-panel-border bg-panel rounded-lg;
+  border-width: var(--border);
+  border-style: solid;
+}
+.panel-grid {
+  gap: var(--gap);
+  padding: var(--gap);
 }
 .btn {
   @apply border-panel-border bg-panel rounded-md border px-4 py-1.5 text-xs font-semibold tracking-wider text-neutral-300 uppercase transition-colors;
@@ -94,7 +118,7 @@ body {
   width: var(--tile);
   height: var(--tile);
   overflow: hidden;
-  border-radius: 0.25rem;
+  border-radius: calc(var(--tile) * 0.036); /* ≈0.25rem on a 7rem tile, proportional below */
   transition:
     transform 120ms ease,
     box-shadow 120ms ease;
@@ -174,10 +198,10 @@ body {
     opacity: 1;
   }
   62% {
-    transform: translateX(-2px);
+    transform: translateX(-0.125rem);
   }
   80% {
-    transform: translateX(2px);
+    transform: translateX(0.125rem);
   }
   100% {
     transform: translateX(0);
@@ -192,6 +216,6 @@ body {
   }
   to {
     opacity: 0;
-    transform: scale(0.85) translateY(-6px);
+    transform: scale(0.85) translateY(-0.375rem);
   }
 }

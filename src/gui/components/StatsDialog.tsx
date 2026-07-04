@@ -26,7 +26,6 @@ export function StatsDialog({
       // <dialog> doesn't inherit the page's text color — set it explicitly.
       className="panel m-auto w-[min(20rem,92vw)] text-neutral-200 shadow-2xl backdrop:bg-black/70 backdrop:backdrop-blur-sm"
     >
-      {/* padding lives here — the panel class's own p-1.5 can't be trusted to lose */}
       <div className="flex flex-col gap-6 p-6">
         <h2 className="text-center text-xl font-bold tracking-[0.3em] text-neutral-100">STATS</h2>
         <dl className="flex flex-col font-mono text-sm">

@@ -16,8 +16,6 @@ export function App() {
 
   useEffect(() => {
     if (mode === "menu") return;
-    // --tile (style.css) scales the board/pool off this
-    document.documentElement.style.setProperty("--n", String(size));
     const back = () => setMode("menu");
     const view: View =
       mode === "solve"
@@ -56,5 +54,5 @@ export function App() {
     );
   }
 
-  return <div ref={host} />;
+  return <div ref={host} className="flex h-full w-full items-center justify-center" />;
 }

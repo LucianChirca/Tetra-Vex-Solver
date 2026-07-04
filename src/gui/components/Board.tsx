@@ -37,7 +37,7 @@ export function Board({
         "animate-[pullout_260ms_ease-in_forwards] ring-2 ring-amber-400";
   return (
     <div
-      className={`panel grid grid-cols-[repeat(var(--size),var(--tile))] grid-rows-[repeat(var(--size),var(--tile))] ${glow} transition-shadow`}
+      className={`panel panel-grid grid grid-cols-[repeat(var(--size),var(--tile))] grid-rows-[repeat(var(--size),var(--tile))] ${glow} transition-shadow`}
       style={{ "--size": size } as CSSProperties}
       onPointerLeave={() => onCellHover?.(null)}
     >
