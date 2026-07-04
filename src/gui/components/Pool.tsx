@@ -10,12 +10,15 @@ export function Pool({
   size,
   slots,
   draggingId,
+  highlightIds,
   onTilePointerDown,
   onHoverChange,
 }: {
   size: number;
   slots: readonly (TileModel | null)[];
   draggingId?: number | null;
+  // Solver feedback: tiles the solver is currently considering (ringed).
+  highlightIds?: ReadonlySet<number>;
   onTilePointerDown?: (tileId: number, e: PointerEvent) => void;
   onHoverChange?: (over: boolean) => void;
 }) {
@@ -32,9 +35,9 @@ export function Pool({
           {tile && (
             <Tile
               tile={tile}
-              className={
+              className={`${
                 draggingId === tile.id ? "opacity-30" : onTilePointerDown ? "hover:scale-105" : ""
-              }
+              } ${highlightIds?.has(tile.id) ? "ring-accent ring-2" : ""}`}
               onPointerDown={onTilePointerDown ? (e) => onTilePointerDown(tile.id, e) : undefined}
             />
           )}

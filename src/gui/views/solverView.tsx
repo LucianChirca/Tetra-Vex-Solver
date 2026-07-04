@@ -35,6 +35,7 @@ interface Engine {
   model: Game;
   gen: Generator<SolverEvent, boolean, void>;
   last: SolverEvent | null;
+  candidateIds: Set<number>; // pool tiles the solver is about to try at the current cell
   ticks: number; // events applied so far — also the flash key, so each attempt re-animates
   done: boolean;
   solved: boolean;
@@ -65,6 +66,7 @@ function SolverScreen({ size }: { size: number }) {
     model: new Game(puzzle),
     gen: new SOLVERS[solverName](puzzle).solve(),
     last: null,
+    candidateIds: new Set(),
     ticks: 0,
     done: false,
     solved: false,
@@ -91,14 +93,18 @@ function SolverScreen({ size }: { size: number }) {
       return false;
     }
     const ev = r.value;
-    if (ev.kind === "place") {
+    if (ev.kind === "candidates") {
+      e.candidateIds = new Set(ev.tiles.map((t) => t.id));
+    } else if (ev.kind === "place") {
       e.model.place(ev.row, ev.col, ev.tile);
       e.stats.placements++;
+      e.candidateIds.delete(ev.tile.id);
     } else if (ev.kind === "backtrack") {
       e.model.remove(ev.row, ev.col);
       e.stats.backtracks++;
     } else {
       e.stats.rejections++;
+      e.candidateIds.delete(ev.tile.id);
     }
     e.last = ev;
     e.ticks++;
@@ -125,7 +131,7 @@ function SolverScreen({ size }: { size: number }) {
   // Show the candidate the solver last tried-and-dropped in its cell (reject) or
   // pulled back out (backtrack) — not once we're solved.
   const flash =
-    !e.solved && e.last && e.last.kind !== "place"
+    !e.solved && e.last && (e.last.kind === "reject" || e.last.kind === "backtrack")
       ? { index: e.last.row * size + e.last.col, kind: e.last.kind, tile: e.last.tile, key: e.ticks }
       : null;
 
@@ -153,7 +159,7 @@ function SolverScreen({ size }: { size: number }) {
         )}
       </div>
 
-      <Pool size={size} slots={slots} />
+      <Pool size={size} slots={slots} highlightIds={e.done ? undefined : e.candidateIds} />
 
       {/* compact footer: one row of controls + a thin speed slider underneath */}
       <div className="flex min-h-16 w-full flex-col justify-center gap-2">

@@ -42,8 +42,9 @@ export abstract class BacktrackingSolver {
     // Branching - which moves to try
     const row = Math.floor(index / this.size);
     const col = index % this.size;
-    const candidates = this.candidatesFor(row, col);
-    for (const tile of candidates) {
+    const candidates = [...this.candidatesFor(row, col)];
+    yield { kind: "candidates", row, col, tiles: candidates }; // GUI-only: pool highlighting, no effect on the search
+    for (const [i, tile] of candidates.entries()) {
       // Case 1: Candidate is wrong
       if (!this.model.isLegalMove(row, col, tile)) {
         // Skip move but show it in the GUI
@@ -66,6 +67,9 @@ export abstract class BacktrackingSolver {
       this.model.remove(row, col);
       this.placed[tile.id] = false;
       yield { kind: "backtrack", row, col, tile };
+      // GUI-only: re-announce the untried remainder — the highlight set was
+      // overwritten by the deeper cell's candidates while we were down there.
+      yield { kind: "candidates", row, col, tiles: candidates.slice(i + 1) };
     }
 
     return false; // no solution found in this branch
