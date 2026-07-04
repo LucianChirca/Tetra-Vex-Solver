@@ -14,5 +14,4 @@ export interface SolverStats {
   placements: number;
   rejections: number;
   backtracks: number;
-  maxDepth: number; // deepest cell index reached (== size*size when solved)
 }

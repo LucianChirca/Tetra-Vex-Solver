@@ -6,7 +6,7 @@ import type { SolverEvent, SolverStats } from "./events";
 // Input = Puzzle; output = a stream of domain events the GUI can replay.
 export abstract class BacktrackingSolver {
   readonly name: string = "base";
-  readonly stats: SolverStats = { placements: 0, rejections: 0, backtracks: 0, maxDepth: 0 };
+  readonly stats: SolverStats = { placements: 0, rejections: 0, backtracks: 0 };
   // protected: the concrete strategies read these inside candidatesFor().
   protected readonly tiles: readonly Tile[];
   protected readonly size: number;
@@ -34,7 +34,6 @@ export abstract class BacktrackingSolver {
   // Recursion over cell index i (row = i / size, col = i % size): for each candidate,
   // yield place + recurse; on a dead end, yield backtrack and try the next.
   protected *step(index: number): Generator<SolverEvent, boolean, void> {
-    this.stats.maxDepth = Math.max(this.stats.maxDepth, index);
     /// Base cases
     if (index === this.size * this.size) {
       return true; // solved
