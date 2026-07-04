@@ -1,4 +1,4 @@
-import { BacktrackingSolver } from "./base";
+import { RowMajorSolver } from "./base";
 import { Side, type Puzzle, type Tile } from "../../core";
 import { forcedSides } from "./borderFirst";
 
@@ -8,7 +8,7 @@ import { forcedSides } from "./borderFirst";
 // cells, byTop/byLeft along the first column/row, the whole pool only at
 // (0,0). Every candidate matches by construction (zero reject events), and
 // border-first pruning/ordering (see borderFirst.ts) is layered on top.
-export class OptimizedSolver extends BacktrackingSolver {
+export class OptimizedSolver extends RowMajorSolver {
   override readonly name = "optimized";
   private readonly byTopLeft = new Map<number, Tile[]>(); // key: top*10 + left
   private readonly byTop: Tile[][] = Array.from({ length: 10 }, () => []);

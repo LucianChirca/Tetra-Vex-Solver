@@ -1,4 +1,4 @@
-import { BacktrackingSolver } from "./base";
+import { RowMajorSolver } from "./base";
 import { Side, type Puzzle, type Tile } from "../../core";
 import { edge, opposite } from "../../game";
 
@@ -18,7 +18,7 @@ export function forcedSides(tiles: readonly Tile[]): Side[][] {
 // Level 3: tiles with forced-border sides are pruned from cells where the side
 // would face inward, and tried first where it faces the border (they're the
 // scarcest fit).
-export class BorderFirstSolver extends BacktrackingSolver {
+export class BorderFirstSolver extends RowMajorSolver {
   override readonly name = "border-first";
   // forced[tile.id] = sides that must face the board border.
   private readonly forced: Side[][];

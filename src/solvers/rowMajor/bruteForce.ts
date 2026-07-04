@@ -1,8 +1,8 @@
-import { BacktrackingSolver } from "./base";
+import { RowMajorSolver } from "./base";
 import type { Tile } from "../../core";
 
 // Level 0: no pruning — every unused tile. Baseline.
-export class BruteForceSolver extends BacktrackingSolver {
+export class BruteForceSolver extends RowMajorSolver {
   override readonly name = "brute-force";
 
   protected candidatesFor(_row: number, _col: number): Iterable<Tile> {
