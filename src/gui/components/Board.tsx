@@ -32,9 +32,9 @@ export function Board({
   const attemptClass =
     flash?.kind === "reject"
       ? // a wrong candidate: shown, then a "nope" shake; it lingers till the next try
-        "animate-[tryout_240ms_ease-out] opacity-90 ring-2 ring-red-500"
+        "animate-[tryout_240ms_ease-out] opacity-90 ring-2 ring-red-500 ring-inset"
       : // backtracking: the tile is lifted back out of the cell (no shake)
-        "animate-[pullout_260ms_ease-in_forwards] ring-2 ring-amber-400";
+        "animate-[pullout_260ms_ease-in_forwards] ring-2 ring-amber-400 ring-inset";
   return (
     <div
       className={`panel panel-grid grid grid-cols-[repeat(var(--size),var(--tile))] grid-rows-[repeat(var(--size),var(--tile))] ${glow} transition-shadow`}
@@ -44,7 +44,7 @@ export function Board({
       {cells.map((tile, i) => (
         <div
           key={i}
-          className={`bg-cell rounded ${hoverIndex === i ? "ring-accent ring-2" : ""}`}
+          className={`bg-cell rounded ${hoverIndex === i ? "ring-accent ring-2 ring-inset" : ""}`}
           onPointerEnter={() => onCellHover?.(i)}
         >
           {tile ? (

@@ -37,7 +37,7 @@ export function Pool({
               tile={tile}
               className={`${
                 draggingId === tile.id ? "opacity-30" : onTilePointerDown ? "hover:scale-105" : ""
-              } ${highlightIds?.has(tile.id) ? "ring-accent ring-2" : ""}`}
+              } ${highlightIds?.has(tile.id) ? "ring-accent ring-2 ring-inset" : ""}`}
               onPointerDown={onTilePointerDown ? (e) => onTilePointerDown(tile.id, e) : undefined}
             />
           )}
