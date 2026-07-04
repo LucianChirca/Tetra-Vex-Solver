@@ -7,6 +7,6 @@ export class EdgeMatchSolver extends BacktrackingSolver {
   override readonly name = "edge-match";
 
   protected candidatesFor(row: number, col: number): Iterable<Tile> {
-    throw new Error("not implemented");
+    return this.tiles.filter((t) => !this.placed[t.id] && this.model.isLegalMove(row, col, t));
   }
 }
