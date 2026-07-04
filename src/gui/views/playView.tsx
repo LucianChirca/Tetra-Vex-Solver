@@ -8,11 +8,14 @@ import { PlayScreen } from "../components/PlayScreen";
 export class PlayView implements View {
   private root: Root | null = null;
 
-  constructor(private readonly newController: () => PlayController) {}
+  constructor(
+    private readonly newController: () => PlayController,
+    private readonly onBack: () => void,
+  ) {}
 
   mount(parent: HTMLElement): void {
     this.root = createRoot(parent);
-    this.root.render(<PlayScreen newController={this.newController} />);
+    this.root.render(<PlayScreen newController={this.newController} onBack={this.onBack} />);
   }
 
   destroy(): void {
