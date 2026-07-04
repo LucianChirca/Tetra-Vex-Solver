@@ -8,7 +8,8 @@ import type { View } from "./view";
 import { Game, generate } from "../../game";
 import type { Tile } from "../../core";
 import { SOLVERS, type SolverEvent, type SolverName } from "../../solvers";
-import { Board, Pool, StatsDialog } from "../components";
+import type { CSSProperties } from "react";
+import { Board, Pool, StatsDialog, StatusRow } from "../components";
 import { fmtDuration } from "../format";
 
 // Hosts SolverScreen, which animates a solver's SolverEvent stream onto its own
@@ -44,7 +45,6 @@ interface Engine {
   done: boolean;
   solved: boolean;
   stats: { placements: number; rejections: number; backtracks: number };
-  depth: number; // tiles currently on the board
   startedAt: number | null; // performance.now() at the first event
   elapsedMs: number; // wall time first event → finish (pauses included)
 }
@@ -79,11 +79,13 @@ function SolverScreen({ size, onBack }: { size: number; onBack: () => void }) {
     done: false,
     solved: false,
     stats: { placements: 0, rejections: 0, backtracks: 0 },
-    depth: 0,
     startedAt: null,
     elapsedMs: 0,
   });
-  const eng = useRef<Engine>(fresh());
+  // Lazy init: fresh() builds a Game + solver + generator, too heavy to
+  // rebuild-and-discard on every render.
+  const eng = useRef<Engine | null>(null);
+  eng.current ??= fresh();
 
   const reset = () => {
     eng.current = fresh();
@@ -94,7 +96,7 @@ function SolverScreen({ size, onBack }: { size: number; onBack: () => void }) {
 
   // Pull one event, apply it to the model, repaint. Returns false when finished.
   const step = (): boolean => {
-    const e = eng.current;
+    const e = eng.current!;
     if (e.done) return false;
     e.startedAt ??= performance.now();
     const r = e.gen.next();
@@ -114,11 +116,9 @@ function SolverScreen({ size, onBack }: { size: number; onBack: () => void }) {
       e.model.place(ev.row, ev.col, ev.tile);
       e.stats.placements++;
       e.candidateIds.delete(ev.tile.id);
-      e.depth++;
     } else if (ev.kind === "backtrack") {
       e.model.remove(ev.row, ev.col);
       e.stats.backtracks++;
-      e.depth--;
     } else {
       e.stats.rejections++;
       e.candidateIds.delete(ev.tile.id);
@@ -139,6 +139,7 @@ function SolverScreen({ size, onBack }: { size: number; onBack: () => void }) {
   }, [running, speed]);
 
   const e = eng.current;
+  const depth = e.stats.placements - e.stats.backtracks; // tiles currently on the board
   const cells: (Tile | null)[] = Array.from({ length: size * size }, (_, i) =>
     e.model.at(Math.floor(i / size), i % size),
   );
@@ -166,7 +167,10 @@ function SolverScreen({ size, onBack }: { size: number; onBack: () => void }) {
   };
 
   return (
-    <div className="flex h-[calc(100dvh-2rem)] w-[min(92vw,24rem)] flex-col items-center gap-3">
+    <div
+      className="flex h-full w-[min(92vw,24rem)] flex-col items-center gap-3"
+      style={{ "--n": size } as CSSProperties}
+    >
       {/* fixed top bar: costs the game no vertical space */}
       <div className="fixed top-[max(0.75rem,env(safe-area-inset-top))] left-[max(0.75rem,env(safe-area-inset-left))] z-40">
         <button onClick={onBack} className="btn-round" aria-label="Back to menu">
@@ -176,36 +180,18 @@ function SolverScreen({ size, onBack }: { size: number; onBack: () => void }) {
 
       {/* the game centers in the measured space the footer leaves over */}
       <div className="game-area w-full flex-1">
-        <div className="game-inner flex h-full w-full flex-col items-center justify-center gap-3">
+        <div className="game-inner flex h-full w-full flex-col items-center justify-center">
           <Board size={size} cells={cells} flash={flash} solved={e.solved} />
 
-          {/* width matches the board/pool panels so the button aligns with their right edge */}
-          <div
-            className="relative flex h-5 items-center justify-center"
-            style={{ width: `calc(var(--tile) * ${size} + var(--gap) * ${size + 1})` }}
-          >
-            {e.solved && (
-              <button
-                onClick={() => setStatsOpen(true)}
-                className="btn absolute right-0 px-2 py-0.5 text-xs"
-              >
-                Stats
-              </button>
-            )}
-            {e.solved ? (
-              <span className="animate-pulse text-sm font-bold tracking-[0.3em] text-emerald-400">
-                SOLVED 🎉
-              </span>
-            ) : (
-              <span
-                title="placed · rejected · backtracked · depth/board"
-                className="font-mono text-xs tracking-wider whitespace-nowrap text-neutral-500"
-              >
-                {e.stats.placements} placed · {e.stats.rejections} rej · {e.stats.backtracks} back ·
-                depth {e.depth}/{size * size}
-              </span>
-            )}
-          </div>
+          <StatusRow solved={e.solved} onStats={() => setStatsOpen(true)}>
+            <span
+              title="placed · rejected · backtracked · depth/board"
+              className="font-mono text-xs tracking-wider whitespace-nowrap text-neutral-500"
+            >
+              {e.stats.placements} placed · {e.stats.rejections} rej · {e.stats.backtracks} back ·
+              depth {depth}/{size * size}
+            </span>
+          </StatusRow>
 
           <Pool size={size} slots={slots} highlightIds={e.done ? undefined : e.candidateIds} />
         </div>
@@ -252,17 +238,20 @@ function SolverScreen({ size, onBack }: { size: number; onBack: () => void }) {
         </div>
       </div>
 
-      <StatsDialog
-        open={statsOpen}
-        onClose={() => setStatsOpen(false)}
-        rows={[
-          ["Placed", e.stats.placements],
-          ["Rejected", e.stats.rejections],
-          ["Backtracked", e.stats.backtracks],
-          ["Total moves", e.stats.placements + e.stats.rejections + e.stats.backtracks],
-          ["Time", fmtDuration(e.elapsedMs)],
-        ]}
-      />
+      {/* only exists once solved — keeps the ~25Hz tick render free of dialog work */}
+      {e.solved && (
+        <StatsDialog
+          open={statsOpen}
+          onClose={() => setStatsOpen(false)}
+          rows={[
+            ["Placed", e.stats.placements],
+            ["Rejected", e.stats.rejections],
+            ["Backtracked", e.stats.backtracks],
+            ["Total moves", e.stats.placements + e.stats.rejections + e.stats.backtracks],
+            ["Time", fmtDuration(e.elapsedMs)],
+          ]}
+        />
+      )}
     </div>
   );
 }

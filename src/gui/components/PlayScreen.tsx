@@ -1,10 +1,11 @@
 import { useEffect, useReducer, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent } from "react";
+import type { CSSProperties, PointerEvent as ReactPointerEvent } from "react";
 import { Board } from "./Board";
 import { Pool } from "./Pool";
 import { Tile } from "./Tile";
 import { SnapBack } from "./SnapBack";
 import { StatsDialog } from "./StatsDialog";
+import { StatusRow } from "./StatusRow";
 import { fmtClock, fmtDuration } from "../format";
 import type { PlayController } from "../controllers/playController";
 
@@ -32,11 +33,6 @@ function slotRect(tileId: number): { x: number; y: number } | null {
   return { x: r.left, y: r.top };
 }
 
-// Composes Board + Pool and owns the human's input: a custom pointer drag (the
-// tile follows the cursor — no native drag image). Board/Pool report hover; on
-// release we resolve against the controller (place / swap / return). A rejected
-// pool drag glides back to its slot instead of vanishing. `newController`
-// mints a fresh board (Reset clears the current one; New deals another).
 // Live clock pill for the top bar. Ticks once a second while running; shows
 // the frozen time once solved. Owns its own tick so PlayScreen doesn't rerender.
 function Timer({ startedAt, frozenMs }: { startedAt: number | null; frozenMs: number | null }) {
@@ -55,6 +51,11 @@ function Timer({ startedAt, frozenMs }: { startedAt: number | null; frozenMs: nu
   );
 }
 
+// Composes Board + Pool and owns the human's input: a custom pointer drag (the
+// tile follows the cursor — no native drag image). Board/Pool report hover; on
+// release we resolve against the controller (place / swap / return). A rejected
+// pool drag glides back to its slot instead of vanishing. `newController`
+// mints a fresh board (Reset clears the current one; New deals another).
 export function PlayScreen({
   newController,
   onBack,
@@ -67,19 +68,17 @@ export function PlayScreen({
   const [drag, setDrag] = useState<Drag | null>(null);
   const [hover, setHover] = useState<Hover>(null);
   const [returning, setReturning] = useState<Returning | null>(null);
-  // Run stats: clock starts at the first grab, a move = any drop that changed
-  // the board (place/swap or sending a placed tile home).
-  const run = useRef({ moves: 0, startedAt: null as number | null });
+  // Run stats: the clock starts at the first grab, a move = any drop that
+  // changed the board (place/swap or sending a placed tile home).
+  const movesRef = useRef(0);
+  const [startedAt, setStartedAt] = useState<number | null>(null);
   // Snapshot taken at the winning drop; also gates the "Stats" button.
   const [finalStats, setFinalStats] = useState<{ moves: number; elapsedMs: number } | null>(null);
   const [statsOpen, setStatsOpen] = useState(false);
-  // Mirrors run.current.startedAt for the Timer (refs can't be read in render).
-  const [startedAt, setStartedAt] = useState<number | null>(null);
 
   const startDrag = (tileId: number, e: ReactPointerEvent) => {
     e.preventDefault();
-    run.current.startedAt ??= performance.now();
-    setStartedAt(run.current.startedAt);
+    setStartedAt((prev) => prev ?? performance.now());
     // iOS implicitly captures the pointer to this tile on touch, which stops
     // pointerenter firing on the cells we drag over — release it so hover works.
     if (e.currentTarget.hasPointerCapture(e.pointerId)) {
@@ -110,12 +109,12 @@ export function PlayScreen({
 
       // A real drag onto a legal cell commits — nothing to animate.
       if (moved && hover?.kind === "cell" && controller.placeOnCell(drag.tileId, hover.index)) {
-        run.current.moves++;
+        movesRef.current++;
         // Solved by this drop? Freeze the clock and pop the stats.
         if (controller.isSolved()) {
           setFinalStats({
-            moves: run.current.moves,
-            elapsedMs: performance.now() - (run.current.startedAt ?? performance.now()),
+            moves: movesRef.current,
+            elapsedMs: performance.now() - (startedAt ?? performance.now()),
           });
           setStatsOpen(true);
         }
@@ -130,7 +129,7 @@ export function PlayScreen({
       //    a tap on a placed tile ("send home");
       //  - back to its original board cell if a board tile's move was rejected.
       const toPool = !moved || drag.fromPool || hover?.kind === "pool";
-      if (toPool && !drag.fromPool) run.current.moves++; // a placed tile went home
+      if (toPool && !drag.fromPool) movesRef.current++; // a placed tile went home
       if (toPool) controller.returnToPool(drag.tileId);
       const slot = toPool ? slotRect(drag.tileId) : null;
       setReturning({
@@ -152,7 +151,7 @@ export function PlayScreen({
       window.removeEventListener("pointerup", drop);
       window.removeEventListener("pointercancel", cancel);
     };
-  }, [drag, hover, controller]);
+  }, [drag, hover, controller, startedAt]);
 
   // Hide the in-flight tile's pool slot while it's dragging or gliding back.
   const inFlightId = drag?.tileId ?? returning?.tileId ?? null;
@@ -166,7 +165,7 @@ export function PlayScreen({
     setReturning(null);
   };
   const clearRun = () => {
-    run.current = { moves: 0, startedAt: null };
+    movesRef.current = 0;
     setStartedAt(null);
     setFinalStats(null);
     setStatsOpen(false);
@@ -186,11 +185,14 @@ export function PlayScreen({
   };
 
   return (
-    // Full height (minus the body's p-4): the bar pins to the top and the game
+    // Fills the body's content box: the bar pins to the top and the game
     // centers in what's left, so bar→board space always equals pool→bottom
     // space (each = half the slack + 1rem of padding; mt-4 mirrors the body's
     // bottom padding).
-    <div className="flex h-[calc(100dvh-2rem)] w-[min(92vw,24rem)] flex-col items-center">
+    <div
+      className="flex h-full w-[min(92vw,24rem)] flex-col items-center"
+      style={{ "--n": controller.size } as CSSProperties}
+    >
       {/* top bar: back / timer / reset / new — in flow, so it can never overlap the board */}
       <div className="flex w-full items-center gap-2">
         <button onClick={onBack} className="btn-round" aria-label="Back to menu" title="Menu">
@@ -212,7 +214,7 @@ export function PlayScreen({
 
       {/* the game centers in the measured space below the bar */}
       <div className="game-area mt-4 w-full flex-1">
-        <div className="game-inner flex h-full w-full flex-col items-center justify-center gap-3">
+        <div className="game-inner flex h-full w-full flex-col items-center justify-center">
           <Board
             size={controller.size}
             cells={controller.boardCells()}
@@ -223,32 +225,11 @@ export function PlayScreen({
             onCellHover={(index) => setHover(index === null ? null : { kind: "cell", index })}
           />
 
-          {/* fixed height so swapping the label never nudges the board */}
-          {/* width matches the board/pool panels so the button aligns with their right edge */}
-          <div
-            className="relative flex h-5 items-center justify-center"
-            style={{
-              width: `calc(var(--tile) * ${controller.size} + var(--gap) * ${controller.size + 1})`,
-            }}
-          >
-            {solved && finalStats && (
-              <button
-                onClick={() => setStatsOpen(true)}
-                className="btn absolute right-0 px-2 py-0.5 text-xs"
-              >
-                Stats
-              </button>
-            )}
-            {solved ? (
-              <span className="animate-pulse text-sm font-bold tracking-[0.3em] text-emerald-400">
-                SOLVED 🎉
-              </span>
-            ) : (
-              <span className="text-xs font-semibold tracking-[0.25em] text-neutral-500">
-                TILE POOL
-              </span>
-            )}
-          </div>
+          <StatusRow solved={solved} onStats={finalStats ? () => setStatsOpen(true) : undefined}>
+            <span className="text-xs font-semibold tracking-[0.25em] text-neutral-500">
+              TILE POOL
+            </span>
+          </StatusRow>
 
           <Pool
             size={controller.size}
@@ -276,14 +257,17 @@ export function PlayScreen({
             />
           )}
 
-          <StatsDialog
-            open={statsOpen && finalStats !== null}
-            onClose={() => setStatsOpen(false)}
-            rows={[
-              ["Moves", finalStats?.moves ?? 0],
-              ["Time", fmtDuration(finalStats?.elapsedMs ?? 0)],
-            ]}
-          />
+          {/* only exists once solved — keeps the drag-render path free of dialog work */}
+          {finalStats && (
+            <StatsDialog
+              open={statsOpen}
+              onClose={() => setStatsOpen(false)}
+              rows={[
+                ["Moves", finalStats.moves],
+                ["Time", fmtDuration(finalStats.elapsedMs)],
+              ]}
+            />
+          )}
         </div>
       </div>
     </div>
