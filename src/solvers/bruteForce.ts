@@ -5,7 +5,8 @@ import type { Tile } from "../core";
 export class BruteForceSolver extends BacktrackingSolver {
   override readonly name = "brute-force";
 
-  protected candidatesFor(row: number, col: number): Iterable<Tile> {
-    throw new Error("not implemented");
+  protected candidatesFor(_row: number, _col: number): Iterable<Tile> {
+    // Return all unplaced tiles
+    return this.tiles.filter((t) => !this.placed[t.id]);
   }
 }

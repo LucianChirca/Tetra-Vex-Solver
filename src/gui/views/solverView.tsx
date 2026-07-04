@@ -5,11 +5,10 @@
 import { useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import type { View } from "./view";
-import { Game } from "../../game";
+import { Game, generate } from "../../game";
 import type { Tile } from "../../core";
 import { SOLVERS, type SolverEvent, type SolverName } from "../../solvers";
 import { Board, Pool } from "../components";
-import { mockSolverRun } from "../mockSolver";
 
 // Hosts SolverScreen, which animates a solver's SolverEvent stream onto its own
 // model. The solver clock (play/pause/step/speed) lives in the component.
@@ -48,22 +47,23 @@ const SOLVER_LABELS: Record<SolverName, string> = {
   "edge-match": "Edge matching",
   indexed: "Indexed lookup",
 };
-const SOLVER_NAMES = Object.keys(SOLVERS) as SolverName[];
+// Only implemented solvers; re-add as they land.
+const SOLVER_NAMES: SolverName[] = ["brute-force" /* , "edge-match", "indexed" */];
 // Slider 0..100 → delay ms (right = faster). 100 → ~10ms, 0 → ~1210ms (slow
 // enough to watch each try/reject/backtrack).
 const delayFor = (speed: number) => 10 + (100 - speed) * 12;
 
 function SolverScreen({ size }: { size: number }) {
-  // The mock owns the puzzle (it needs the answer key); stable across re-runs.
-  const mock = useMemo(() => mockSolverRun(size), [size]);
+  // One puzzle per size; stable across re-runs so solvers can be compared.
+  const puzzle = useMemo(() => generate(size), [size]);
   const [name, setName] = useState<SolverName>("brute-force");
   const [speed, setSpeed] = useState(70);
   const [running, setRunning] = useState(false);
   const [, bump] = useReducer((v) => v + 1, 0);
 
-  const fresh = (): Engine => ({
-    model: new Game(mock.puzzle),
-    gen: mock.run(),
+  const fresh = (solverName: SolverName = name): Engine => ({
+    model: new Game(puzzle),
+    gen: new SOLVERS[solverName](puzzle).solve(),
     last: null,
     ticks: 0,
     done: false,
@@ -131,7 +131,7 @@ function SolverScreen({ size }: { size: number }) {
 
   const changeSolver = (next: SolverName) => {
     setName(next);
-    eng.current = fresh();
+    eng.current = fresh(next);
     setRunning(false);
     bump();
   };
