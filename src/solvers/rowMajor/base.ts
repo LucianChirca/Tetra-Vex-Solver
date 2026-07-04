@@ -1,8 +1,9 @@
-import { Game } from "../game";
-import type { Puzzle, Tile } from "../core";
-import type { SolverEvent, SolverStats } from "./events";
+import { Game } from "../../game";
+import type { Puzzle, Tile } from "../../core";
+import type { SolverEvent, SolverStats } from "../events";
 
-// Shared row-major backtracking. Strategies override only candidatesFor.
+// Shared row-major (left-to-right, top-to-bottom) backtracking. Strategies
+// override only candidatesFor.
 // Input = Puzzle; output = a stream of domain events the GUI can replay.
 export abstract class BacktrackingSolver {
   readonly name: string = "base";

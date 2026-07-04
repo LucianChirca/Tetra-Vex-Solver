@@ -1,5 +1,5 @@
 import { BacktrackingSolver } from "./base";
-import type { Tile } from "../core";
+import type { Tile } from "../../core";
 
 // Level 0: no pruning — every unused tile. Baseline.
 export class BruteForceSolver extends BacktrackingSolver {
