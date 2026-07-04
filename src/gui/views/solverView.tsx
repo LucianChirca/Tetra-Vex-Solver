@@ -67,9 +67,11 @@ const SOLVER_NAMES: SolverName[] = [
   "scarcest-tile",
   // "indexed",
 ];
-// Slider 0..100 → delay ms (right = faster). Linear in events/sec (0.5..25.5),
-// so each notch adds the same speed. 0 → 2000ms, 50 → ~77ms, 100 → ~39ms.
-const delayFor = (speed: number) => 1000 / (0.5 + speed / 4);
+// Slider 0..100 → delay ms (right = faster), linear in events/sec. At the far
+// right the cap is literal: 0ms delay AND a batch of steps per tick — as fast
+// as the browser can go.
+const delayFor = (speed: number) => (speed === 100 ? 0 : 1000 / (0.5 + speed / 2));
+const stepsPerTick = (speed: number) => (speed === 100 ? 25 : 1);
 
 function SolverScreen({ size, onBack }: { size: number; onBack: () => void }) {
   // One puzzle per size; stable across re-runs so solvers can be compared.
@@ -143,7 +145,12 @@ function SolverScreen({ size, onBack }: { size: number; onBack: () => void }) {
   useEffect(() => {
     if (!running) return;
     const id = window.setInterval(() => {
-      if (!step()) window.clearInterval(id);
+      for (let i = 0; i < stepsPerTick(speed); i++) {
+        if (!step()) {
+          window.clearInterval(id);
+          return;
+        }
+      }
     }, delayFor(speed));
     return () => window.clearInterval(id);
   }, [running, speed]);
