@@ -55,7 +55,7 @@ const SOLVER_LABELS: Record<SolverName, string> = {
   "edge-match": "Edge matching",
   "border-first": "Border first",
   optimized: "Optimized",
-  "most-constrained": "Most constrained",
+  "scarcest-tile": "Scarcest tile",
   indexed: "Indexed lookup",
 };
 // Only implemented solvers; re-add as they land.
@@ -64,7 +64,7 @@ const SOLVER_NAMES: SolverName[] = [
   "edge-match",
   "border-first",
   "optimized",
-  "most-constrained",
+  "scarcest-tile",
   // "indexed",
 ];
 // Slider 0..100 → delay ms (right = faster). Linear in events/sec (0.5..25.5),

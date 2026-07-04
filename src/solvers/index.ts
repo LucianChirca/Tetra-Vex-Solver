@@ -2,10 +2,11 @@ import { BruteForceSolver } from "./rowMajor/bruteForce";
 import { EdgeMatchSolver } from "./rowMajor/edgeMatch";
 import { BorderFirstSolver } from "./rowMajor/borderFirst";
 import { OptimizedSolver } from "./rowMajor/optimized";
-import { MostConstrainedSolver } from "./mrv/mostConstrained";
+import { ScarcestTileSolver } from "./mrv/scarcestTile";
 import { IndexedSolver } from "./rowMajor/indexed";
 
-export { BacktrackingSolver } from "./rowMajor/base";
+export { BacktrackingSolver } from "./base";
+export { RowMajorSolver } from "./rowMajor/base";
 export type { SolverEvent, SolverStats } from "./events";
 
 export const SOLVERS = {
@@ -13,7 +14,7 @@ export const SOLVERS = {
   "edge-match": EdgeMatchSolver,
   "border-first": BorderFirstSolver,
   optimized: OptimizedSolver,
-  "most-constrained": MostConstrainedSolver,
+  "scarcest-tile": ScarcestTileSolver,
   indexed: IndexedSolver,
 } as const;
 

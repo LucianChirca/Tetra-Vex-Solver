@@ -1,19 +1,41 @@
-import { BacktrackingSolver } from "../rowMajor/base";
-import type { Tile } from "../../core";
+import { BacktrackingSolver } from "../base";
+import { Side, type Puzzle, type Tile } from "../../core";
 import type { SolverEvent } from "../events";
+import { forcedSides } from "../rowMajor/borderFirst";
 
-// Most-constrained-cell-first (MRV, "fail first") — no fixed fill order.
-// Each step scans the empty cells, computes every cell's legal candidates, and
-// recurses into the cell with the FEWEST. Two wins over row-major:
-//   - a cell with 0 candidates anywhere on the board aborts the branch
-//     immediately (row-major only notices when it eventually reaches it);
-//   - branching happens where the tree is narrowest, so wrong turns are cheap.
-// Candidates are legal by construction, so it never emits a reject event.
-export class MostConstrainedSolver extends BacktrackingSolver {
-  override readonly name = "most-constrained";
+// Scarcest-tile-first — tile-driven, no fixed fill order. Each step picks the
+// unplaced tile with the FEWEST possible cells and branches over those cells.
+// "Possible" = empty, legal against placed neighbors, and none of the tile's
+// forced-border sides (see forcedSides) pointing inward. Forced tiles have the
+// scarcest homes — a {Top,Left} corner tile has exactly one — so the
+// constrained tiles are placed first and the free ones fill in after.
+// A tile with zero possible cells anywhere fails the branch immediately.
+// Cells are pre-filtered legal, so it never emits a reject event.
+export class ScarcestTileSolver extends BacktrackingSolver {
+  override readonly name = "scarcest-tile";
+  private readonly forced: Side[][];
 
-  protected candidatesFor(row: number, col: number): Iterable<Tile> {
-    return this.tiles.filter((t) => !this.placed[t.id] && this.model.isLegalMove(row, col, t));
+  constructor(puzzle: Puzzle) {
+    super(puzzle);
+    this.forced = forcedSides(this.tiles);
+  }
+
+  private cellsFor(tile: Tile): [number, number][] {
+    const last = this.size - 1;
+    const cells: [number, number][] = [];
+    for (let row = 0; row < this.size; row++) {
+      for (let col = 0; col < this.size; col++) {
+        const facesBorder = (s: Side) =>
+          (s === Side.Top && row === 0) ||
+          (s === Side.Bottom && row === last) ||
+          (s === Side.Left && col === 0) ||
+          (s === Side.Right && col === last);
+        if (this.forced[tile.id]!.every(facesBorder) && this.model.isLegalMove(row, col, tile)) {
+          cells.push([row, col]);
+        }
+      }
+    }
+    return cells;
   }
 
   override *solve(): Generator<SolverEvent, boolean, void> {
@@ -22,23 +44,21 @@ export class MostConstrainedSolver extends BacktrackingSolver {
 
   private *search(count: number): Generator<SolverEvent, boolean, void> {
     if (count === this.size * this.size) {
-      return true; // every cell filled
+      return true; // every tile placed
     }
 
-    // MRV: find the empty cell with the fewest legal candidates.
-    let best: { row: number; col: number; cand: Tile[] } | null = null;
-    for (let row = 0; row < this.size; row++) {
-      for (let col = 0; col < this.size; col++) {
-        if (this.model.at(row, col)) continue;
-        const cand = [...this.candidatesFor(row, col)];
-        if (cand.length === 0) return false; // some cell is unfillable — fail the whole branch now
-        if (!best || cand.length < best.cand.length) best = { row, col, cand };
-      }
+    // The most constrained tile: fewest possible cells right now.
+    let best: { tile: Tile; cells: [number, number][] } | null = null;
+    for (const tile of this.tiles) {
+      if (this.placed[tile.id]) continue;
+      const cells = this.cellsFor(tile);
+      if (cells.length === 0) return false; // this tile has no home — fail the branch now
+      if (!best || cells.length < best.cells.length) best = { tile, cells };
     }
-    const { row, col, cand } = best!; // count < size² guarantees an empty cell
+    const { tile, cells } = best!; // count < size² guarantees an unplaced tile
 
-    yield { kind: "candidates", row, col, tiles: cand }; // GUI-only: pool highlighting
-    for (const [i, tile] of cand.entries()) {
+    for (const [row, col] of cells) {
+      yield { kind: "candidates", row, col, tiles: [tile] }; // GUI-only: ring the routed tile
       this.stats.placements++;
       this.model.place(row, col, tile);
       this.placed[tile.id] = true;
@@ -52,9 +72,6 @@ export class MostConstrainedSolver extends BacktrackingSolver {
       this.model.remove(row, col);
       this.placed[tile.id] = false;
       yield { kind: "backtrack", row, col, tile };
-      // GUI-only: re-announce the untried remainder after the deeper cell's
-      // candidates overwrote the highlight set.
-      yield { kind: "candidates", row, col, tiles: cand.slice(i + 1) };
     }
     return false;
   }
